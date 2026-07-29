@@ -1,11 +1,12 @@
-// Local Database Storage Service for MRA SYND Portal
-// 100% Private, Zero 3rd-Party Cloud Access - Purely Browser-based Persistence
+// Local Database Storage Service for MRA SYNC Portal
+// Pure Browser-based Storage Engine for MRA SYNC
 
 const STORAGE_KEYS = {
   USERS: 'mra_db_users',
   LEAVES: 'mra_db_leave_applications',
   MATERIALS: 'mra_db_material_requests',
   WORK_LOGS: 'mra_db_work_transfer_logs',
+  MEETINGS: 'mra_db_meeting_logs',
   SESSION: 'mra_db_active_session'
 };
 
@@ -14,7 +15,7 @@ const DEFAULT_USERS = [
   {
     id: 'CEO001',
     name: 'Alexander Vance',
-    email: 'ceo@mrasynd.com',
+    email: 'ceo@mrasync.com',
     password: 'admin',
     role: 'CEO/FOUNDER/DIRECTOR',
     dept: 'Executive Management',
@@ -23,7 +24,7 @@ const DEFAULT_USERS = [
   {
     id: 'PC001',
     name: 'Sarah Connor',
-    email: 'pc@mrasynd.com',
+    email: 'pc@mrasync.com',
     password: 'admin',
     role: 'PROJECT_COORDINATOR',
     dept: 'Project Management',
@@ -32,16 +33,25 @@ const DEFAULT_USERS = [
   {
     id: 'TL001',
     name: 'Michael Scott',
-    email: 'tl@mrasynd.com',
+    email: 'tl@mrasync.com',
     password: 'admin',
     role: 'TL',
     dept: 'Hardware & Embedded Systems',
     avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
   },
   {
+    id: 'STL001',
+    name: 'Jim Halpert',
+    email: 'subtl@mrasync.com',
+    password: 'admin',
+    role: 'SUB_TL',
+    dept: 'Hardware & Embedded Systems',
+    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80'
+  },
+  {
     id: 'HR001',
     name: 'Pam Beesly',
-    email: 'hr@mrasynd.com',
+    email: 'hr@mrasync.com',
     password: 'admin',
     role: 'HR',
     dept: 'Human Resources',
@@ -50,7 +60,7 @@ const DEFAULT_USERS = [
   {
     id: 'EMP101',
     name: 'John Doe',
-    email: 'john@mrasynd.com',
+    email: 'john@mrasync.com',
     password: 'user',
     role: 'EMPLOYEE',
     dept: 'Hardware & Embedded Systems',
@@ -59,7 +69,7 @@ const DEFAULT_USERS = [
   {
     id: 'EMP102',
     name: 'Jane Smith',
-    email: 'jane@mrasynd.com',
+    email: 'jane@mrasync.com',
     password: 'user',
     role: 'EMPLOYEE',
     dept: 'Software & AI Systems',
@@ -68,11 +78,11 @@ const DEFAULT_USERS = [
   {
     id: 'EMP103',
     name: 'Robert Drake',
-    email: 'robert@mrasynd.com',
+    email: 'robert@mrasync.com',
     password: 'user',
     role: 'EMPLOYEE',
     dept: 'Inventory & Logistics',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80'
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
   }
 ];
 
@@ -116,8 +126,10 @@ const DEFAULT_LEAVES = [
 const DEFAULT_MATERIALS = [
   {
     id: 'MAT-801',
-    empName: 'John Doe',
-    empId: 'EMP101',
+    empName: 'Michael Scott (TL)',
+    empId: 'TL001',
+    targetTLId: 'TL001',
+    targetTLName: 'Michael Scott',
     deptName: 'Hardware & Embedded Systems',
     materialType: 'STM32 Microcontroller Dev Boards & JTAG Debuggers',
     noOfUnits: '5 Units',
@@ -138,8 +150,10 @@ const DEFAULT_MATERIALS = [
   },
   {
     id: 'MAT-802',
-    empName: 'Jane Smith',
-    empId: 'EMP102',
+    empName: 'Jim Halpert (Sub-TL)',
+    empId: 'STL001',
+    targetTLId: 'TL001',
+    targetTLName: 'Michael Scott',
     deptName: 'Software & AI Systems',
     materialType: 'High-speed Cat6 Ethernet Cabling & Testing Kit',
     noOfUnits: '50 Meters',
@@ -182,7 +196,7 @@ const DEFAULT_WORK_LOGS = [
   },
   {
     id: 'WRK-1002',
-    workAlloter: 'Sarah Connor',
+    workAlloter: 'Sarah Connor (Project Coordinator)',
     senderEmpId: 'PC001',
     fromDept: 'Project Management',
     toDept: 'Hardware & Embedded Systems',
@@ -197,6 +211,52 @@ const DEFAULT_WORK_LOGS = [
     completedDate: 'Pending',
     status: 'Accepted / In Progress',
     rejectionReason: ''
+  },
+  {
+    id: 'WRK-1003',
+    workAlloter: 'Alexander Vance (CEO)',
+    senderEmpId: 'CEO001',
+    fromDept: 'Executive Management',
+    toDept: 'Project Management',
+    receiverEmpId: 'PC001',
+    receiverName: 'Sarah Connor',
+    projectName: 'Q3 Milestone Alignment & Hardware Delivery Review',
+    hardwareDocInfo: 'Q3 Roadmaps, departmental budget reports, and hardware delivery schedules.',
+    requirement: 'Emergency',
+    hardwareDocReceived: true,
+    createdDate: '2026-07-29 11:30 AM',
+    acceptedDate: '2026-07-29 11:45 AM',
+    completedDate: 'Pending',
+    status: 'Accepted / In Progress',
+    rejectionReason: ''
+  }
+];
+
+// Initial Seed Meeting Logs for Project Coordinator & TLs
+const DEFAULT_MEETINGS = [
+  {
+    id: 'MTG-301',
+    title: 'Sprint Planning & Material Requisition Sync',
+    organizer: 'Alexander Vance (CEO)',
+    organizerId: 'CEO001',
+    targetDept: 'Hardware & Embedded Systems',
+    participants: ['Sarah Connor (PC001)', 'Michael Scott (TL001)'],
+    date: '2026-07-31',
+    time: '10:00 AM',
+    agenda: 'Review Hardware & Embedded Systems material shortage and pending satellite node tasks.',
+    status: 'Pending Meeting'
+  },
+  {
+    id: 'MTG-302',
+    title: 'Software & AI Model Architecture Alignment',
+    organizer: 'Sarah Connor (PC)',
+    organizerId: 'PC001',
+    targetDept: 'Software & AI Systems',
+    participants: ['Jane Smith (EMP102)', 'Jim Halpert (SUB_TL)'],
+    date: '2026-08-01',
+    time: '02:30 PM',
+    agenda: 'Align neural network cluster requirements and work transfer dependencies.',
+    status: 'Pending Meeting'
   }
 ];
 
@@ -212,6 +272,9 @@ export const initDatabase = () => {
   }
   if (!localStorage.getItem(STORAGE_KEYS.WORK_LOGS)) {
     localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(DEFAULT_WORK_LOGS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.MEETINGS)) {
+    localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(DEFAULT_MEETINGS));
   }
 };
 
@@ -298,7 +361,7 @@ export const addMaterialRequest = (matData) => {
     orderReceivedDate: 'N/A',
     noOfDaysToReceiveOrder: 'N/A',
     noOfDaysForProvidingMaterial: 'N/A',
-    updates: 'Request submitted to Inventory.'
+    updates: 'Request submitted to TL / Inventory.'
   };
   materials.unshift(newMaterial);
   localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(materials));
@@ -358,6 +421,25 @@ export const updateWorkLogStatus = (workId, status, extra = {}) => {
   return null;
 };
 
+// Meetings API
+export const getMeetings = () => {
+  initDatabase();
+  return JSON.parse(localStorage.getItem(STORAGE_KEYS.MEETINGS) || '[]');
+};
+
+export const addMeetingLog = (meetingData) => {
+  const meetings = getMeetings();
+  const newMtg = {
+    id: `MTG-${Math.floor(300 + Math.random() * 600)}`,
+    ...meetingData,
+    status: 'Pending Meeting'
+  };
+  meetings.unshift(newMtg);
+  localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(meetings));
+  triggerStorageEvent(STORAGE_KEYS.MEETINGS);
+  return newMtg;
+};
+
 // Raw Database Management (For CEO/Director)
 export const exportDatabaseJSON = () => {
   const data = {
@@ -365,13 +447,14 @@ export const exportDatabaseJSON = () => {
     leaves: getLeaves(),
     materials: getMaterials(),
     workLogs: getWorkLogs(),
+    meetings: getMeetings(),
     exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `MRA_SYND_Backend_Database_Backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `MRA_SYNC_Backend_Database_Backup_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
 };
 
@@ -380,10 +463,12 @@ export const resetDatabaseToDefaults = () => {
   localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(DEFAULT_LEAVES));
   localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(DEFAULT_MATERIALS));
   localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(DEFAULT_WORK_LOGS));
+  localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(DEFAULT_MEETINGS));
   triggerStorageEvent(STORAGE_KEYS.USERS);
   triggerStorageEvent(STORAGE_KEYS.LEAVES);
   triggerStorageEvent(STORAGE_KEYS.MATERIALS);
   triggerStorageEvent(STORAGE_KEYS.WORK_LOGS);
+  triggerStorageEvent(STORAGE_KEYS.MEETINGS);
 };
 
 export const deleteRecordFromSheet = (sheetKey, recordId) => {
@@ -392,6 +477,7 @@ export const deleteRecordFromSheet = (sheetKey, recordId) => {
   if (sheetKey === 'materials') key = STORAGE_KEYS.MATERIALS;
   if (sheetKey === 'workLogs') key = STORAGE_KEYS.WORK_LOGS;
   if (sheetKey === 'users') key = STORAGE_KEYS.USERS;
+  if (sheetKey === 'meetings') key = STORAGE_KEYS.MEETINGS;
 
   if (key) {
     const list = JSON.parse(localStorage.getItem(key) || '[]');

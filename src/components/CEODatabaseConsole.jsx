@@ -3,22 +3,23 @@ import {
   getLeaves,
   getMaterials,
   getWorkLogs,
+  getMeetings,
   getUsers,
   exportDatabaseJSON,
   resetDatabaseToDefaults,
   deleteRecordFromSheet
 } from '../services/db';
 import { useToast } from '../context/ToastContext';
-import { Database, Download, RefreshCw, Trash2, Search, Filter, ShieldAlert, FileSpreadsheet, Lock } from 'lucide-react';
+import { Database, Download, RefreshCw, Trash2, FileSpreadsheet, Lock } from 'lucide-react';
 
 export const CEODatabaseConsole = ({ activeUser }) => {
   const { showToast, showModalPopup } = useToast();
-  const [activeSheet, setActiveSheet] = useState('leaves'); // leaves, materials, workLogs, users
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSheet, setActiveSheet] = useState('leaves');
 
   const [leavesData, setLeavesData] = useState([]);
   const [materialsData, setMaterialsData] = useState([]);
   const [workLogsData, setWorkLogsData] = useState([]);
+  const [meetingsData, setMeetingsData] = useState([]);
   const [usersData, setUsersData] = useState([]);
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export const CEODatabaseConsole = ({ activeUser }) => {
     setLeavesData(getLeaves());
     setMaterialsData(getMaterials());
     setWorkLogsData(getWorkLogs());
+    setMeetingsData(getMeetings());
     setUsersData(getUsers());
   };
 
@@ -133,11 +135,19 @@ export const CEODatabaseConsole = ({ activeUser }) => {
         </button>
 
         <button
+          onClick={() => setActiveSheet('meetings')}
+          className={`tab-btn ${activeSheet === 'meetings' ? 'active' : ''}`}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>Sheet 4: Pending Meetings ({meetingsData.length})</span>
+        </button>
+
+        <button
           onClick={() => setActiveSheet('users')}
           className={`tab-btn ${activeSheet === 'users' ? 'active' : ''}`}
         >
           <FileSpreadsheet className="w-4 h-4" />
-          <span>Sheet 4: User Accounts ({usersData.length})</span>
+          <span>Sheet 5: User Accounts ({usersData.length})</span>
         </button>
       </div>
 
@@ -148,7 +158,7 @@ export const CEODatabaseConsole = ({ activeUser }) => {
             Sheet Table: {activeSheet}
           </h3>
           <div className="text-xs text-slate-400">
-            Database Engine: Local Browser Persistence (100% Private)
+            Database Engine: MRA SYNC Browser Engine
           </div>
         </div>
 
@@ -162,7 +172,7 @@ export const CEODatabaseConsole = ({ activeUser }) => {
                   <th>2. Name</th>
                   <th>3. Date Range</th>
                   <th>4. Contact</th>
-                  <th>5. No Days</th>
+                  <th>5. Days</th>
                   <th>6. Type</th>
                   <th>7. Priority</th>
                   <th>8. Approved By</th>
@@ -200,30 +210,22 @@ export const CEODatabaseConsole = ({ activeUser }) => {
           </div>
         )}
 
-        {/* Sheet 2: Material Requests Table (Complete 18 Specs) */}
+        {/* Sheet 2: Material Requests Table */}
         {activeSheet === 'materials' && (
           <div className="table-responsive">
             <table className="data-table text-xs">
               <thead>
                 <tr>
                   <th>Req ID</th>
-                  <th>1. Employee</th>
-                  <th>2. ID</th>
-                  <th>3. Material Needed</th>
-                  <th>4. Units</th>
-                  <th>5. Available?</th>
-                  <th>6. Inventory Handler</th>
-                  <th>7. Provided Status</th>
-                  <th>8. Order Status</th>
-                  <th>9. Request Date</th>
-                  <th>10. Reached Date</th>
-                  <th>11. Accepted Date</th>
-                  <th>12. Provided Date</th>
-                  <th>13. Order Placed Date</th>
-                  <th>14. Order Received Date</th>
-                  <th>15. Days to Order</th>
-                  <th>16. Days to Provide</th>
-                  <th>17. Log Updates</th>
+                  <th>Requester</th>
+                  <th>ID</th>
+                  <th>Assigned TL</th>
+                  <th>Material Needed</th>
+                  <th>Units</th>
+                  <th>Available?</th>
+                  <th>Inventory Handler</th>
+                  <th>Status</th>
+                  <th>Request Date</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -233,21 +235,13 @@ export const CEODatabaseConsole = ({ activeUser }) => {
                     <td className="font-mono text-cyan-400 font-bold">{m.id}</td>
                     <td>{m.empName}</td>
                     <td className="font-mono">{m.empId}</td>
+                    <td className="font-semibold text-amber-300">{m.targetTLName || 'TL Assigned'}</td>
                     <td>{m.materialType}</td>
                     <td>{m.noOfUnits}</td>
                     <td>{m.availableAtMoment}</td>
                     <td>{m.inventoryHandledBy}</td>
                     <td>{m.status}</td>
-                    <td>{m.status.includes('Order') ? m.status : 'N/A'}</td>
                     <td>{m.requestDate}</td>
-                    <td>{m.reachedDate}</td>
-                    <td>{m.acceptedDate}</td>
-                    <td>{m.providedDate}</td>
-                    <td>{m.orderPlacedDate}</td>
-                    <td>{m.orderReceivedDate}</td>
-                    <td>{m.noOfDaysToReceiveOrder}</td>
-                    <td>{m.noOfDaysForProvidingMaterial}</td>
-                    <td className="max-w-xs truncate">{m.updates}</td>
                     <td>
                       <button onClick={() => handleDelete('materials', m.id)} className="action-btn action-reject">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -273,10 +267,7 @@ export const CEODatabaseConsole = ({ activeUser }) => {
                   <th>Receiver Employee</th>
                   <th>Project Name</th>
                   <th>Hardware & Doc Info</th>
-                  <th>Requirement</th>
-                  <th>HW & Doc Recv?</th>
                   <th>Created Date</th>
-                  <th>Accepted Date</th>
                   <th>Completed Date</th>
                   <th>Status</th>
                   <th>Action</th>
@@ -292,10 +283,7 @@ export const CEODatabaseConsole = ({ activeUser }) => {
                     <td>{w.receiverName} ({w.receiverEmpId})</td>
                     <td className="font-bold">{w.projectName}</td>
                     <td className="max-w-xs truncate">{w.hardwareDocInfo}</td>
-                    <td>{w.requirement}</td>
-                    <td>{w.hardwareDocReceived ? 'Yes ✅' : 'No ❌'}</td>
                     <td>{w.createdDate}</td>
-                    <td>{w.acceptedDate}</td>
                     <td>{w.completedDate}</td>
                     <td className="font-bold text-amber-300">{w.status}</td>
                     <td>
@@ -310,7 +298,47 @@ export const CEODatabaseConsole = ({ activeUser }) => {
           </div>
         )}
 
-        {/* Sheet 4: Users Directory */}
+        {/* Sheet 4: Pending Meetings */}
+        {activeSheet === 'meetings' && (
+          <div className="table-responsive">
+            <table className="data-table text-xs">
+              <thead>
+                <tr>
+                  <th>Meeting ID</th>
+                  <th>Title</th>
+                  <th>Organizer</th>
+                  <th>Target Dept</th>
+                  <th>Participants</th>
+                  <th>Date & Time</th>
+                  <th>Agenda</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {meetingsData.map(mtg => (
+                  <tr key={mtg.id}>
+                    <td className="font-mono text-cyan-400 font-bold">{mtg.id}</td>
+                    <td className="font-bold text-white">{mtg.title}</td>
+                    <td>{mtg.organizer}</td>
+                    <td>{mtg.targetDept}</td>
+                    <td>{mtg.participants?.join(', ')}</td>
+                    <td>{mtg.date} @ {mtg.time}</td>
+                    <td>{mtg.agenda}</td>
+                    <td className="font-bold text-amber-400">{mtg.status}</td>
+                    <td>
+                      <button onClick={() => handleDelete('meetings', mtg.id)} className="action-btn action-reject">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Sheet 5: Users Directory */}
         {activeSheet === 'users' && (
           <div className="table-responsive">
             <table className="data-table text-xs">

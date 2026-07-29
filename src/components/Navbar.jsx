@@ -11,10 +11,8 @@ import {
   Database,
   LogOut,
   Bell,
-  ShieldCheck,
   Building,
-  User,
-  ChevronDown
+  ShieldCheck
 } from 'lucide-react';
 
 export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setSelectedDept, onLogout }) => {
@@ -31,19 +29,16 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
     'Inventory & Logistics'
   ];
 
-  // Check unread updates for logged user
   useEffect(() => {
     const checkUpdates = () => {
       const logs = getWorkLogs();
       const leaves = getLeaves();
       let count = 0;
 
-      // Pending work transfers for user
-      if (activeUser?.role === 'EMPLOYEE' || activeUser?.role === 'TL') {
+      if (activeUser?.role === 'EMPLOYEE' || activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL') {
         const pendingWork = logs.filter(w => w.receiverEmpId === activeUser.id && w.status === 'Pending Acceptance');
         count += pendingWork.length;
       }
-      // Pending leaves for HR or CEO
       if (activeUser?.role === 'HR' || activeUser?.role === 'CEO/FOUNDER/DIRECTOR') {
         const pendingLeaves = leaves.filter(l => l.status === 'Pending');
         count += pendingLeaves.length;
@@ -66,7 +61,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
   const handleLogoutClick = () => {
     showModalPopup({
       title: 'Confirm Logout',
-      message: 'Are you sure you want to end your current portal session? All local database changes remain saved.',
+      message: 'Are you sure you want to end your current portal session?',
       iconType: 'logout',
       confirmText: 'Yes, Logout',
       cancelText: 'Cancel',
@@ -80,18 +75,18 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
   const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
   const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
   const isHR = activeUser?.role === 'HR';
-  const isTL = activeUser?.role === 'TL';
+  const isTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
 
   return (
     <header className="navbar-container">
       {/* Top Bar */}
       <div className="navbar-top">
         {/* Brand Logo */}
-        <div className="nav-brand" onClick={() => handleTabChange('dashboard', 'Executive Dashboard')}>
-          <img src={logoImg} alt="MRA SYND Logo" className="nav-logo-img" />
+        <div className="nav-brand" onClick={() => handleTabChange('dashboard', 'Overview Dashboard')}>
+          <img src={logoImg} alt="MRA SYNC Logo" className="nav-logo-img" />
           <div className="nav-brand-text">
             <h1 className="nav-title">
-              <span className="text-gradient-gold">MRA</span> <span className="text-gradient-silver">SYND</span>
+              <span className="text-gradient-gold">MRA</span> <span className="text-gradient-silver">SYNC</span>
             </h1>
             <span className="nav-tagline">CONNECT • COORDINATE • COMPLETE</span>
           </div>
@@ -99,21 +94,21 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
         {/* Global Controls & CEO Shortcut */}
         <div className="nav-right-controls">
-          {/* Department Filter (Visible for CEO, PC, HR) */}
-          {(isCEO || isPC || isHR) && (
-            <div className="dept-selector-wrapper">
-              <Building className="w-4 h-4 text-amber-400" />
-              <select
-                value={selectedDept}
-                onChange={e => setSelectedDept(e.target.value)}
-                className="dept-select"
-              >
-                {DEPARTMENTS.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          {/* High-Contrast Department Selector */}
+          <div className="dept-selector-wrapper">
+            <Building className="w-4 h-4 text-amber-400" />
+            <select
+              value={selectedDept}
+              onChange={e => setSelectedDept(e.target.value)}
+              className="dept-select-styled"
+            >
+              {DEPARTMENTS.map(dept => (
+                <option key={dept} value={dept} className="dept-option-styled">
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* EXCLUSIVE CEO / DIRECTOR BACKEND DATABASE SHORTCUT BUTTON */}
           {isCEO && (
@@ -149,19 +144,19 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
         </div>
       </div>
 
-      {/* Main Navigation Bar Links */}
+      {/* Main Navigation Links */}
       <nav className="navbar-links-row">
         <div className="nav-links-group">
           {/* Dashboard */}
           <button
-            onClick={() => handleTabChange('dashboard', 'Executive Dashboard')}
+            onClick={() => handleTabChange('dashboard', 'Overview Dashboard')}
             className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
           >
             <LayoutDashboard className="w-4 h-4" />
             <span>Overview Dashboard</span>
           </button>
 
-          {/* Leave Application Portal (All users) */}
+          {/* Leave Application Portal */}
           <button
             onClick={() => handleTabChange('leaves', 'Leave Application Portal')}
             className={`nav-link ${activeTab === 'leaves' ? 'active' : ''}`}
@@ -170,16 +165,14 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             <span>Leave Application Portal</span>
           </button>
 
-          {/* Material Request Form & Inventory Workflow */}
-          {(isCEO || isPC || isTL || activeUser?.dept === 'Inventory & Logistics' || activeUser?.role === 'EMPLOYEE') && (
-            <button
-              onClick={() => handleTabChange('inventory', 'Material & Inventory Portal')}
-              className={`nav-link ${activeTab === 'inventory' ? 'active' : ''}`}
-            >
-              <Boxes className="w-4 h-4" />
-              <span>Material & Inventory</span>
-            </button>
-          )}
+          {/* Material Request & Inventory Workflow */}
+          <button
+            onClick={() => handleTabChange('inventory', 'Material & Inventory Portal')}
+            className={`nav-link ${activeTab === 'inventory' ? 'active' : ''}`}
+          >
+            <Boxes className="w-4 h-4" />
+            <span>Material & Inventory</span>
+          </button>
 
           {/* Transfer Track of Work */}
           <button
@@ -202,7 +195,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
         <div className="nav-status-indicator">
           <ShieldCheck className="w-4 h-4 text-emerald-400 inline mr-1" />
-          <span>Local Engine Active</span>
+          <span>MRA SYNC Active</span>
         </div>
       </nav>
     </header>

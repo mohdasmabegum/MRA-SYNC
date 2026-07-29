@@ -29,21 +29,22 @@ export const Auth = ({ onLoginSuccess }) => {
   const ROLES = [
     { value: 'CEO/FOUNDER/DIRECTOR', label: 'CEO / Founder / Director (Full Access + CEO Database Console)' },
     { value: 'PROJECT_COORDINATOR', label: 'Project Coordinator (All Depts + Team Analytics)' },
-    { value: 'TL', label: 'Team Lead (TL - Team Scope & Inventory Track)' },
-    { value: 'HR', label: 'HR Manager (Leave Approvals & Work Completion Time Ranges)' },
+    { value: 'TL', label: 'Team Lead (TL - Team Scope & Material Approvals)' },
+    { value: 'SUB_TL', label: 'Sub-TL (Assistant Team Lead)' },
+    { value: 'HR', label: 'HR Manager (Leave Approvals & Work Completion Reports)' },
     { value: 'EMPLOYEE', label: 'Employee (Personal Work Log & Task Portal)' }
   ];
 
-  const handleQuickDemoLogin = (email, roleLabel) => {
+  const handleQuickDemoLogin = (email) => {
     const users = getUsers();
     const targetUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (targetUser) {
       showToast(`Logged in as ${targetUser.name} (${targetUser.role})`, 'login', 'Authentication Successful');
       showModalPopup({
         title: 'Authentication Successful',
-        message: `Welcome back, ${targetUser.name}! You are currently logged in with privileges for: [${targetUser.role}]. Local database ready.`,
+        message: `Welcome back, ${targetUser.name}! You are currently logged in under [${targetUser.role}] role privileges.`,
         iconType: 'login',
-        confirmText: 'Enter Dashboard'
+        confirmText: 'Enter MRA SYNC Portal'
       });
       onLoginSuccess(targetUser);
     }
@@ -57,7 +58,7 @@ export const Auth = ({ onLoginSuccess }) => {
       const users = getUsers();
       const user = users.find(u => u.email.toLowerCase() === formData.email.toLowerCase() && u.password === formData.password);
       if (!user) {
-        setErrorMsg('Invalid email or password. Try a demo account below.');
+        setErrorMsg('Invalid email or password. Select a demo role below.');
         return;
       }
       showToast(`Welcome back ${user.name}!`, 'login', 'Login Successful');
@@ -87,24 +88,24 @@ export const Auth = ({ onLoginSuccess }) => {
         {/* Left Branding Panel */}
         <div className="auth-brand-side">
           <div className="brand-logo-frame">
-            <img src={logoImg} alt="MRA Logo" className="auth-logo-img" />
+            <img src={logoImg} alt="MRA SYNC Logo" className="auth-logo-img" />
           </div>
           <h2 className="brand-title">
-            <span className="text-gradient-gold">MRA</span> <span className="text-gradient-silver">SYND</span>
+            <span className="text-gradient-gold">MRA</span> <span className="text-gradient-silver">SYNC</span>
           </h2>
           <p className="brand-subtitle">CONNECT • COORDINATE • COMPLETE</p>
 
           <div className="brand-features-list">
             <div className="feature-item">
-              <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-              <span><strong>100% Local Browser Database</strong> - Zero 3rd-party data leaks</span>
+              <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
+              <span><strong>Leave Applications Portal</strong> with HR & Executive approvals</span>
             </div>
             <div className="feature-item">
-              <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
-              <span><strong>CEO Special Console</strong> - Direct shortcut to backend sheets</span>
+              <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0" />
+              <span><strong>Material Requisitions</strong> routed to TL / Sub-TL & Inventory</span>
             </div>
             <div className="feature-item">
-              <CheckCircle2 className="w-5 h-5 text-sky-400 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
               <span><strong>Transfer Track of Work</strong> with mandatory hardware & doc checks</span>
             </div>
           </div>
@@ -132,7 +133,7 @@ export const Auth = ({ onLoginSuccess }) => {
             </div>
 
             {errorMsg && (
-              <div className="error-alert">
+              <div className="error-alert mb-4 text-xs text-rose-400 bg-rose-500/10 p-3 rounded border border-rose-500/30">
                 <span>{errorMsg}</span>
               </div>
             )}
@@ -176,7 +177,7 @@ export const Auth = ({ onLoginSuccess }) => {
                   <Mail className="input-icon" />
                   <input
                     type="email"
-                    placeholder="e.g. ceo@mrasynd.com"
+                    placeholder="e.g. ceo@mrasync.com"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                     required
@@ -233,7 +234,7 @@ export const Auth = ({ onLoginSuccess }) => {
               )}
 
               <button type="submit" className="btn-gold w-full btn-lg mt-2">
-                <span>{isLogin ? 'Sign In to Portal' : 'Create Local Account'}</span>
+                <span>{isLogin ? 'Sign In to Portal' : 'Create Account'}</span>
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </form>
@@ -241,11 +242,11 @@ export const Auth = ({ onLoginSuccess }) => {
             {/* Quick Demo Login Switcher */}
             <div className="demo-accounts-section">
               <div className="demo-header">
-                <span>⚡ 1-Click Quick Role Switch (For Testing & Review)</span>
+                <span>⚡ 1-Click Demo Role Switcher</span>
               </div>
               <div className="demo-grid">
                 <button
-                  onClick={() => handleQuickDemoLogin('ceo@mrasynd.com', 'CEO')}
+                  onClick={() => handleQuickDemoLogin('ceo@mrasync.com')}
                   className="demo-btn demo-ceo"
                 >
                   <span className="demo-role-badge">CEO / DIRECTOR</span>
@@ -253,7 +254,7 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('pc@mrasynd.com', 'Project Coordinator')}
+                  onClick={() => handleQuickDemoLogin('pc@mrasync.com')}
                   className="demo-btn demo-pc"
                 >
                   <span className="demo-role-badge">PROJECT COORD</span>
@@ -261,7 +262,7 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('tl@mrasynd.com', 'TL')}
+                  onClick={() => handleQuickDemoLogin('tl@mrasync.com')}
                   className="demo-btn demo-tl"
                 >
                   <span className="demo-role-badge">TEAM LEAD (TL)</span>
@@ -269,7 +270,15 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('hr@mrasynd.com', 'HR')}
+                  onClick={() => handleQuickDemoLogin('subtl@mrasync.com')}
+                  className="demo-btn demo-subtl"
+                >
+                  <span className="demo-role-badge">SUB-TL</span>
+                  <span className="demo-name">Jim Halpert</span>
+                </button>
+
+                <button
+                  onClick={() => handleQuickDemoLogin('hr@mrasync.com')}
                   className="demo-btn demo-hr"
                 >
                   <span className="demo-role-badge">HR MANAGER</span>
@@ -277,7 +286,7 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('john@mrasynd.com', 'Employee')}
+                  onClick={() => handleQuickDemoLogin('john@mrasync.com')}
                   className="demo-btn demo-emp"
                 >
                   <span className="demo-role-badge">EMPLOYEE</span>

@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { getUsers, getLeaves, getMaterials, getWorkLogs } from '../services/db';
+import { getUsers, getLeaves, getMaterials, getWorkLogs, getMeetings } from '../services/db';
 import {
   Users,
   CalendarCheck,
   Boxes,
   ArrowRightLeft,
   Award,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
   Building,
   UserCheck,
   UserX,
   ChevronRight,
-  Filter,
-  Layers,
-  Sparkles
+  Sparkles,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigate }) => {
@@ -24,59 +23,59 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
   const [leavesList, setLeavesList] = useState([]);
   const [materialsList, setMaterialsList] = useState([]);
   const [workLogsList, setWorkLogsList] = useState([]);
+  const [meetingsList, setMeetingsList] = useState([]);
 
   const [selectedEmpModal, setSelectedEmpModal] = useState(null);
-  const [timeRangeFilter, setTimeRangeFilter] = useState('7_DAYS'); // 7_DAYS, 30_DAYS, ALL
 
   useEffect(() => {
-    const fetchData = () => {
-      setUsersList(getUsers());
-      setLeavesList(getLeaves());
-      setMaterialsList(getMaterials());
-      setWorkLogsList(getWorkLogs());
-    };
     fetchData();
     window.addEventListener('mra_db_updated', fetchData);
     return () => window.removeEventListener('mra_db_updated', fetchData);
   }, []);
 
-  // Department Filtered Data
+  const fetchData = () => {
+    setUsersList(getUsers());
+    setLeavesList(getLeaves());
+    setMaterialsList(getMaterials());
+    setWorkLogsList(getWorkLogs());
+    setMeetingsList(getMeetings());
+  };
+
+  // Department Filter helper
   const filterByDept = (dept) => {
     if (!selectedDept || selectedDept === 'ALL DEPARTMENTS') return true;
     return dept === selectedDept;
   };
 
+  const isSpecificDeptSelected = selectedDept && selectedDept !== 'ALL DEPARTMENTS';
+
   const filteredUsers = usersList.filter(u => filterByDept(u.dept));
   const filteredLeaves = leavesList.filter(l => filterByDept(l.dept));
   const filteredMaterials = materialsList.filter(m => filterByDept(m.deptName));
   const filteredWorkLogs = workLogsList.filter(w => filterByDept(w.fromDept) || filterByDept(w.toDept));
+  const filteredMeetings = meetingsList.filter(m => filterByDept(m.targetDept));
 
   // Compute Employee Work Performance Metrics
   const getEmployeeStats = (empId) => {
     const empLeaves = leavesList.filter(l => l.empId === empId && l.status === 'Approved');
-    const isOnLeaveToday = empLeaves.some(l => {
-      // Check if current date falls in leave range
-      return l.status === 'Approved';
-    });
+    const isOnLeaveToday = empLeaves.length > 0;
 
     const acceptedRequests = workLogsList.filter(w => w.receiverEmpId === empId && w.status.includes('Accepted'));
     const completedRequests = workLogsList.filter(w => w.receiverEmpId === empId && w.status.includes('Completed'));
-    const totalRequests = workLogsList.filter(w => w.receiverEmpId === empId);
 
     return {
       totalLeaves: empLeaves.length,
       status: isOnLeaveToday ? 'On Leave' : 'Active Working',
       acceptedCount: acceptedRequests.length,
-      completedCount: completedRequests.length,
-      totalAssigned: totalRequests.length
+      completedCount: completedRequests.length
     };
   };
 
-  // Find Top Performer Employee (highest current requests & accepted requests)
-  const getTopPerformers = () => {
+  // Find Top Performer Employee per selected department
+  const getTopDepartmentPerformer = (deptName) => {
     const counts = {};
     workLogsList.forEach(w => {
-      if (w.receiverEmpId) {
+      if (w.receiverEmpId && (deptName === 'ALL DEPARTMENTS' || w.toDept === deptName)) {
         if (!counts[w.receiverEmpId]) {
           counts[w.receiverEmpId] = { id: w.receiverEmpId, name: w.receiverName, accepted: 0, completed: 0 };
         }
@@ -93,72 +92,42 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
     return sorted.length > 0 ? sorted[0] : null;
   };
 
-  const topPerformer = getTopPerformers();
+  const topPerformer = getTopDepartmentPerformer(selectedDept);
 
-  // Department-wise work load breakdown
-  const getDeptBreakdown = () => {
-    const depts = [
-      'Hardware & Embedded Systems',
-      'Software & AI Systems',
-      'Inventory & Logistics',
-      'Project Management',
-      'Human Resources'
-    ];
-    return depts.map(d => {
-      const activeWork = workLogsList.filter(w => (w.toDept === d || w.fromDept === d) && !w.status.includes('Completed'));
-      const completedWork = workLogsList.filter(w => (w.toDept === d || w.fromDept === d) && w.status.includes('Completed'));
-      const topInDept = workLogsList.filter(w => w.toDept === d).reduce((acc, curr) => {
-        acc[curr.receiverName] = (acc[curr.receiverName] || 0) + 1;
-        return acc;
-      }, {});
-      let topUser = 'N/A';
-      let maxVal = 0;
-      Object.entries(topInDept).forEach(([name, val]) => {
-        if (val > maxVal) { maxVal = val; topUser = name; }
-      });
-
-      return {
-        name: d,
-        activeWorkCount: activeWork.length,
-        completedWorkCount: completedWork.length,
-        topEmployee: topUser
-      };
-    });
-  };
-
-  const deptStats = getDeptBreakdown();
+  // To-Do Work Tasks for Project Coordinator (tasks assigned to PC)
+  const pcToDoTasks = workLogsList.filter(w => w.receiverEmpId === activeUser?.id && !w.status.includes('Completed'));
+  const pcAssignedTasks = workLogsList.filter(w => w.senderEmpId === activeUser?.id);
 
   const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
   const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
   const isHR = activeUser?.role === 'HR';
-  const isTL = activeUser?.role === 'TL';
+  const isTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
 
   return (
     <div className="dashboard-container">
-      {/* Top Banner */}
+      {/* Hero Welcome Banner */}
       <div className="dash-hero-card glow-card">
         <div className="dash-hero-content">
           <div className="hero-badge">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Role Console: {activeUser?.role}</span>
+            <span>Role Console: {activeUser?.role} ({selectedDept})</span>
           </div>
           <h2 className="hero-title">
             Welcome back, <span className="text-gradient-gold">{activeUser?.name}</span>
           </h2>
           <p className="hero-subtitle">
-            {isCEO && 'CEO Executive Dashboard: Real-time oversight across all departments, leaves, inventory, and employees.'}
-            {isPC && 'Project Coordinator Console: Tracking cross-department work distribution, team velocity, and past week completions.'}
-            {isTL && `Team Lead Dashboard (${activeUser?.dept}): Associated team performance, leave requests, and inventory transfers.`}
-            {isHR && 'HR Intelligence Hub: Organization-wide leave applications, work completions, and employee activity logs.'}
-            {!isCEO && !isPC && !isTL && !isHR && 'Employee Operations Hub: Personal tasks, material requests, and active work transfer logs.'}
+            {isPC && 'Project Coordinator Console: Select a department from the navbar dropdown to inspect department-specific top workers, task velocity, and pending meeting logs.'}
+            {isCEO && 'CEO Executive Control: Department-wise overview of leaves, inventory, employees, and work transfers.'}
+            {isTL && `Team Lead Dashboard for ${activeUser?.dept}: Team member tracking, leaves, and inventory.`}
+            {!isCEO && !isPC && !isTL && 'Employee Operations Console: Personal tasks and department overview.'}
           </p>
         </div>
 
-        {/* Top Performer Card (CEO & PC view) */}
-        {(isCEO || isPC) && topPerformer && (
+        {/* Top Performer Card (Visible per selected department) */}
+        {isSpecificDeptSelected && topPerformer && (
           <div className="top-performer-card">
             <Award className="w-8 h-8 text-amber-400 mb-2" />
-            <div className="top-title">Top Work Accepted Performer</div>
+            <div className="top-title">Top Worker ({selectedDept})</div>
             <div className="top-name">{topPerformer.name}</div>
             <div className="top-stats font-mono">
               <span className="text-amber-400">{topPerformer.accepted} Tasks Accepted</span> • {topPerformer.completed} Completed
@@ -174,9 +143,9 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             <CalendarCheck className="w-6 h-6" />
           </div>
           <div className="metric-info">
-            <span className="metric-label">Active Leave Requests</span>
+            <span className="metric-label">Leave Applications</span>
             <span className="metric-value">{filteredLeaves.filter(l => l.status === 'Pending').length} Pending</span>
-            <span className="metric-sub">{filteredLeaves.filter(l => l.status === 'Approved').length} Approved Leaves</span>
+            <span className="metric-sub">{filteredLeaves.filter(l => l.status === 'Approved').length} Approved ({selectedDept})</span>
           </div>
         </div>
 
@@ -187,7 +156,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           <div className="metric-info">
             <span className="metric-label">Material & Inventory</span>
             <span className="metric-value">{filteredMaterials.filter(m => m.status.includes('Order')).length} Orders Placed</span>
-            <span className="metric-sub">{filteredMaterials.filter(m => m.status.includes('Provided')).length} Items Handed Over</span>
+            <span className="metric-sub">{filteredMaterials.filter(m => m.status.includes('Provided')).length} Handed Over ({selectedDept})</span>
           </div>
         </div>
 
@@ -198,7 +167,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           <div className="metric-info">
             <span className="metric-label">Work Transfers</span>
             <span className="metric-value">{filteredWorkLogs.filter(w => !w.status.includes('Completed')).length} Active Tasks</span>
-            <span className="metric-sub">{filteredWorkLogs.filter(w => w.status.includes('Completed')).length} Tasks Completed ✅</span>
+            <span className="metric-sub">{filteredWorkLogs.filter(w => w.status.includes('Completed')).length} Completed ({selectedDept})</span>
           </div>
         </div>
 
@@ -209,105 +178,122 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           <div className="metric-info">
             <span className="metric-label">Department Members</span>
             <span className="metric-value">{filteredUsers.length} Employees</span>
-            <span className="metric-sub">Across {selectedDept === 'ALL DEPARTMENTS' ? 'All Depts' : selectedDept}</span>
+            <span className="metric-sub">{selectedDept === 'ALL DEPARTMENTS' ? 'All Depts' : selectedDept}</span>
           </div>
         </div>
       </div>
 
-      {/* CEO & Project Coordinator View: Department Load & Employee Roster */}
-      {(isCEO || isPC || isHR) && (
-        <div className="dash-two-col">
-          {/* Department Request & Load Breakdown */}
+      {/* PROJECT COORDINATOR SPECIFIC: To-Do Works & Pending Meeting Logs */}
+      {isPC && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* PC To-Do Tasks from CEO / TLs */}
           <div className="glow-card p-5">
             <div className="card-section-header">
-              <Building className="w-5 h-5 text-amber-400" />
-              <h3>Departmental Request Load & Top Performers</h3>
+              <ArrowRightLeft className="w-5 h-5 text-amber-400" />
+              <h3>Project Coordinator To-Do Work Tasks ({pcToDoTasks.length})</h3>
             </div>
-            <div className="dept-stats-list">
-              {deptStats.map(ds => (
-                <div key={ds.name} className="dept-stat-row">
-                  <div className="dept-info">
-                    <span className="dept-name-text">{ds.name}</span>
-                    <span className="dept-top-emp">Top Acceptor: <strong className="text-amber-300">{ds.topEmployee}</strong></span>
+            <div className="space-y-3">
+              {pcToDoTasks.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No pending To-Do tasks assigned to PC.</p>
+              ) : (
+                pcToDoTasks.map(t => (
+                  <div key={t.id} className="bg-slate-900/60 p-3 rounded-lg border border-amber-500/30 text-xs">
+                    <div className="flex justify-between font-bold text-white mb-1">
+                      <span>{t.projectName} ({t.id})</span>
+                      <span className="text-amber-400">{t.requirement}</span>
+                    </div>
+                    <div className="text-slate-300">From: {t.workAlloter} ({t.fromDept})</div>
+                    <div className="text-slate-400 mt-1">{t.hardwareDocInfo}</div>
                   </div>
-                  <div className="dept-badges">
-                    <span className="badge-active">{ds.activeWorkCount} Active Requests</span>
-                    <span className="badge-completed">{ds.completedWorkCount} Completed</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
-          {/* Employee Master Directory with Interactive Profile Modal on Click */}
+          {/* PC Pending Meeting Logs */}
           <div className="glow-card p-5">
             <div className="card-section-header">
-              <Users className="w-5 h-5 text-sky-400" />
-              <h3>Employee Directory & Work Status (Click for Details)</h3>
+              <Calendar className="w-5 h-5 text-cyan-400" />
+              <h3>Pending Meeting Logs ({filteredMeetings.length})</h3>
             </div>
-
-            <div className="emp-roster-list">
-              {filteredUsers.map(emp => {
-                const stats = getEmployeeStats(emp.id);
-                return (
-                  <div
-                    key={emp.id}
-                    onClick={() => setSelectedEmpModal(emp)}
-                    className="emp-roster-item"
-                  >
-                    <img src={emp.avatar} alt={emp.name} className="emp-avatar-sm" />
-                    <div className="emp-details flex-1">
-                      <div className="emp-name-row">
-                        <span className="emp-name-text">{emp.name}</span>
-                        <span className="emp-id-tag">({emp.id})</span>
-                      </div>
-                      <span className="emp-dept-text">{emp.dept}</span>
+            <div className="space-y-3">
+              {filteredMeetings.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No pending meeting logs for {selectedDept}.</p>
+              ) : (
+                filteredMeetings.map(m => (
+                  <div key={m.id} className="bg-slate-900/60 p-3 rounded-lg border border-cyan-500/30 text-xs">
+                    <div className="flex justify-between font-bold text-white mb-1">
+                      <span>{m.title}</span>
+                      <span className="text-cyan-400">{m.date} @ {m.time}</span>
                     </div>
-
-                    <div className="emp-status-col">
-                      <span className={`status-pill ${stats.status === 'On Leave' ? 'pill-leave' : 'pill-active'}`}>
-                        {stats.status === 'On Leave' ? <UserX className="w-3 h-3 inline mr-1" /> : <UserCheck className="w-3 h-3 inline mr-1" />}
-                        {stats.status}
-                      </span>
-                      <span className="emp-work-count">{stats.acceptedCount} Accepted Tasks</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-500" />
+                    <div className="text-slate-300">Organizer: {m.organizer} | Dept: {m.targetDept}</div>
+                    <div className="text-slate-400 mt-1">Agenda: {m.agenda}</div>
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* TL (Team Lead) View: Associated Team Workloads */}
-      {isTL && (
-        <div className="glow-card p-5 mt-6">
-          <div className="card-section-header">
+      {/* DEPARTMENT-SCOPED DATA VIEW (Requirement #7 & #8):
+          Until a specific department is selected, prompt user or show department roster */}
+      {!isSpecificDeptSelected && (isPC || isCEO) && (
+        <div className="alert-card alert-warning mb-6">
+          <div className="flex items-center gap-2 mb-1">
             <Building className="w-5 h-5 text-amber-400" />
-            <h3>Team Lead Overview for: {activeUser?.dept}</h3>
+            <h4 className="font-bold text-amber-300">Department Scope Filter</h4>
           </div>
-          <div className="team-grid">
-            {usersList.filter(u => u.dept === activeUser?.dept).map(emp => {
-              const stats = getEmployeeStats(emp.id);
-              return (
-                <div key={emp.id} className="team-card glow-card">
-                  <img src={emp.avatar} alt={emp.name} className="emp-avatar-md" />
-                  <h4>{emp.name}</h4>
-                  <span className="text-xs text-slate-400">ID: {emp.id}</span>
-                  <div className="mt-3 text-sm">
-                    <div>Leaves Taken: <strong>{stats.totalLeaves}</strong></div>
-                    <div>Accepted Tasks: <strong className="text-amber-400">{stats.acceptedCount}</strong></div>
-                    <div>Status: <span className="text-emerald-400 font-semibold">{stats.status}</span></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <p className="text-xs text-slate-300">
+            Please select a specific department from the navbar dropdown to inspect department-scoped top worker statistics, employee rosters, and departmental work transfer logs.
+          </p>
         </div>
       )}
 
-      {/* Interactive Employee Profile Details Modal (CEO / PC / HR click trigger) */}
+      {/* Employee List & Employee On Leave Portal per Department (Requirement #10) */}
+      <div className="glow-card p-5">
+        <div className="card-section-header justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-sky-400" />
+            <h3>Employee Roster & Leave Status — {selectedDept} ({filteredUsers.length})</h3>
+          </div>
+          <span className="text-xs text-slate-400">Click any employee for detailed profile modal</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredUsers.map(emp => {
+            const stats = getEmployeeStats(emp.id);
+            return (
+              <div
+                key={emp.id}
+                onClick={() => setSelectedEmpModal(emp)}
+                className="emp-roster-item justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <img src={emp.avatar} alt={emp.name} className="emp-avatar-sm" />
+                  <div>
+                    <div className="font-bold text-white text-xs">{emp.name}</div>
+                    <div className="text-[11px] text-slate-400">{emp.id} • {emp.role}</div>
+                    <div className="text-[11px] text-amber-400">{emp.dept}</div>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className={`status-pill mb-1 ${stats.status === 'On Leave' ? 'pill-leave' : 'pill-active'}`}>
+                    {stats.status === 'On Leave' ? <UserX className="w-3 h-3 mr-1" /> : <UserCheck className="w-3 h-3 mr-1" />}
+                    {stats.status}
+                  </span>
+                  <div className="text-[11px] text-slate-300 font-mono">
+                    {stats.acceptedCount} Accepted Tasks
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Interactive Employee Profile Details Modal */}
       {selectedEmpModal && (
         <div className="modal-backdrop">
           <div className="modal-content glow-card emp-detail-modal">
@@ -357,9 +343,9 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                     </div>
 
                     <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-slate-300">Recent Leave History</h4>
+                      <h4 className="text-sm font-semibold text-slate-300">Leave History for {selectedEmpModal.name}</h4>
                       {empLeaves.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic">No leaves recorded.</p>
+                        <p className="text-xs text-slate-500 italic">No leaves recorded for this employee.</p>
                       ) : (
                         empLeaves.map(l => (
                           <div key={l.id} className="text-xs bg-slate-900/40 p-2 rounded flex justify-between">
@@ -376,7 +362,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
             <div className="modal-footer">
               <button onClick={() => setSelectedEmpModal(null)} className="btn-gold w-full">
-                Close Profile Summary
+                Close Detailed View
               </button>
             </div>
           </div>

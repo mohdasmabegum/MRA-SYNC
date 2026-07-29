@@ -74,7 +74,10 @@ export function AppContent() {
         )}
 
         {activeTab === 'inventory' && (
-          <InventoryPortal activeUser={activeUser} />
+          <InventoryPortal
+            activeUser={activeUser}
+            selectedDept={selectedDept}
+          />
         )}
 
         {activeTab === 'work_transfer' && (
@@ -95,7 +98,7 @@ export function AppContent() {
 
       <footer className="app-footer">
         <div className="footer-content">
-          <span>MRA SYND © 2026 — Corporate Enterprise Workflow Portal</span>
+          <span>MRA SYNC © 2026 — Corporate Enterprise Workflow Portal</span>
           <span className="footer-tag">CONNECT • COORDINATE • COMPLETE</span>
         </div>
       </footer>
