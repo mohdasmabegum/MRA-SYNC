@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   MATERIALS: 'mra_db_material_requests',
   WORK_LOGS: 'mra_db_work_transfer_logs',
   MEETINGS: 'mra_db_meeting_logs',
+  CONVERSATIONS: 'mra_db_conversations',
   CHAT_MESSAGES: 'mra_db_chat_messages',
   SESSION: 'mra_db_active_session'
 };
@@ -206,31 +207,60 @@ const DEFAULT_MEETINGS = [
   }
 ];
 
-// Initial Seed Chat Messages for PM Team & Executives
+// Seed Conversations (Group & Direct)
+const DEFAULT_CONVERSATIONS = [
+  {
+    id: 'conv-group-apollo',
+    title: '🚀 Project Apollo Steering Committee',
+    type: 'group',
+    members: ['CEO001', 'PC001', 'TL001'],
+    lastMessage: 'Team, please review the Q3 Hardware & Software milestone deliverables.',
+    lastTimestamp: '10:18 AM'
+  },
+  {
+    id: 'conv-direct-pc001',
+    title: 'Sarah Connor (Project Coordinator)',
+    type: 'direct',
+    members: ['CEO001', 'PC001'],
+    targetUserId: 'PC001',
+    lastMessage: 'All work transfer requests for Hardware and Software teams have been allocated.',
+    lastTimestamp: '10:20 AM'
+  }
+];
+
+// Seed Messages
 const DEFAULT_CHAT_MESSAGES = [
   {
-    id: 'MSG-1',
+    id: 'msg-1',
+    convId: 'conv-group-apollo',
     senderId: 'CEO001',
     senderName: 'Alexander Vance (CEO)',
-    senderRole: 'CEO/FOUNDER/DIRECTOR',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     text: 'Team, please review the Q3 Hardware & Software milestone deliverables for Project Apollo.',
     timestamp: '10:15 AM'
   },
   {
-    id: 'MSG-2',
+    id: 'msg-2',
+    convId: 'conv-group-apollo',
     senderId: 'PC001',
     senderName: 'Sarah Connor (PC)',
-    senderRole: 'PROJECT_COORDINATOR',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
     text: 'Received. All work transfer requests for Hardware and Software teams have been allocated.',
     timestamp: '10:18 AM'
+  },
+  {
+    id: 'msg-3',
+    convId: 'conv-direct-pc001',
+    senderId: 'PC001',
+    senderName: 'Sarah Connor (PC)',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    text: 'Hi Alexander, I have reviewed the hardware requisition status for Team Lead Michael Scott.',
+    timestamp: '10:20 AM'
   }
 ];
 
 export const initDatabase = () => {
-  const usersJson = localStorage.getItem(STORAGE_KEYS.USERS);
-  if (!usersJson) {
+  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
   }
   if (!localStorage.getItem(STORAGE_KEYS.LEAVES)) {
@@ -244,6 +274,9 @@ export const initDatabase = () => {
   }
   if (!localStorage.getItem(STORAGE_KEYS.MEETINGS)) {
     localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(DEFAULT_MEETINGS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.CONVERSATIONS)) {
+    localStorage.setItem(STORAGE_KEYS.CONVERSATIONS, JSON.stringify(DEFAULT_CONVERSATIONS));
   }
   if (!localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES)) {
     localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(DEFAULT_CHAT_MESSAGES));
@@ -412,23 +445,87 @@ export const addMeetingLog = (meetingData) => {
   return newMtg;
 };
 
-// Team Chat API
-export const getChatMessages = () => {
+// CONVERSATIONS & 1-ON-1 CHAT API
+export const getConversations = () => {
   initDatabase();
-  return JSON.parse(localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES) || '[]');
+  return JSON.parse(localStorage.getItem(STORAGE_KEYS.CONVERSATIONS) || '[]');
 };
 
-export const sendChatMessage = (msgData) => {
-  const messages = getChatMessages();
+export const getMessagesForConversation = (convId) => {
+  initDatabase();
+  const allMessages = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES) || '[]');
+  return allMessages.filter(m => m.convId === convId);
+};
+
+export const sendChatMessageToConv = (convId, msgData) => {
+  const messages = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES) || '[]');
+  const conversations = getConversations();
+  const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
   const newMsg = {
-    id: `MSG-${Date.now()}`,
+    id: `msg-${Date.now()}`,
+    convId,
     ...msgData,
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    timestamp
   };
+
   messages.push(newMsg);
   localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messages));
+
+  // Update conversation last message preview
+  const cIdx = conversations.findIndex(c => c.id === convId);
+  if (cIdx !== -1) {
+    conversations[cIdx].lastMessage = msgData.text;
+    conversations[cIdx].lastTimestamp = timestamp;
+    localStorage.setItem(STORAGE_KEYS.CONVERSATIONS, JSON.stringify(conversations));
+  }
+
   triggerStorageEvent(STORAGE_KEYS.CHAT_MESSAGES);
+  triggerStorageEvent(STORAGE_KEYS.CONVERSATIONS);
   return newMsg;
+};
+
+export const createGroupConversation = (title, memberIds) => {
+  const conversations = getConversations();
+  const newConv = {
+    id: `conv-group-${Date.now()}`,
+    title: `👥 ${title}`,
+    type: 'group',
+    members: memberIds,
+    lastMessage: 'Group conversation created.',
+    lastTimestamp: 'Just now'
+  };
+  conversations.unshift(newConv);
+  localStorage.setItem(STORAGE_KEYS.CONVERSATIONS, JSON.stringify(conversations));
+  triggerStorageEvent(STORAGE_KEYS.CONVERSATIONS);
+  return newConv;
+};
+
+export const getOrCreateDirectConversation = (myUser, targetUser) => {
+  const conversations = getConversations();
+  let existing = conversations.find(c =>
+    c.type === 'direct' &&
+    c.members.includes(myUser.id) &&
+    c.members.includes(targetUser.id)
+  );
+
+  if (!existing) {
+    existing = {
+      id: `conv-direct-${myUser.id}-${targetUser.id}`,
+      title: `${targetUser.name} (${targetUser.role})`,
+      type: 'direct',
+      members: [myUser.id, targetUser.id],
+      targetUserId: targetUser.id,
+      targetUserAvatar: targetUser.avatar,
+      lastMessage: 'Started direct conversation.',
+      lastTimestamp: 'Just now'
+    };
+    conversations.unshift(existing);
+    localStorage.setItem(STORAGE_KEYS.CONVERSATIONS, JSON.stringify(conversations));
+    triggerStorageEvent(STORAGE_KEYS.CONVERSATIONS);
+  }
+
+  return existing;
 };
 
 // EXCEL / CSV DATA EXPORT SERVICE FOR CEO / FOUNDER / DIRECTOR ACCOUNTS
@@ -504,12 +601,14 @@ export const resetDatabaseToDefaults = () => {
   localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(DEFAULT_MATERIALS));
   localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(DEFAULT_WORK_LOGS));
   localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(DEFAULT_MEETINGS));
+  localStorage.setItem(STORAGE_KEYS.CONVERSATIONS, JSON.stringify(DEFAULT_CONVERSATIONS));
   localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(DEFAULT_CHAT_MESSAGES));
   triggerStorageEvent(STORAGE_KEYS.USERS);
   triggerStorageEvent(STORAGE_KEYS.LEAVES);
   triggerStorageEvent(STORAGE_KEYS.MATERIALS);
   triggerStorageEvent(STORAGE_KEYS.WORK_LOGS);
   triggerStorageEvent(STORAGE_KEYS.MEETINGS);
+  triggerStorageEvent(STORAGE_KEYS.CONVERSATIONS);
   triggerStorageEvent(STORAGE_KEYS.CHAT_MESSAGES);
 };
 
