@@ -16,8 +16,7 @@ import {
   PlusCircle,
   Video,
   ChevronRight,
-  Info,
-  CheckCircle2
+  User
 } from 'lucide-react';
 
 export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigate }) => {
@@ -36,12 +35,17 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
     title: '',
     organizer: activeUser?.name || '',
     organizerId: activeUser?.id || '',
-    targetDept: selectedDept !== 'ALL DEPARTMENTS' ? selectedDept : 'Hardware & Embedded Systems',
+    targetDept: selectedDept !== 'ALL DEPARTMENTS' ? selectedDept : (activeUser?.dept || 'Hardware & Embedded Systems'),
     date: new Date().toISOString().split('T')[0],
     time: '10:00 AM',
     agenda: '',
     participants: [activeUser?.name]
   });
+
+  const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
+  const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
+  const isTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
+  const isNormalEmp = activeUser?.role === 'EMPLOYEE';
 
   useEffect(() => {
     fetchData();
@@ -51,21 +55,15 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
   // Popup Meeting Alert on initial load for CEO, PC, TL, Sub-TL
   useEffect(() => {
-    const isPrivilegedRole = activeUser?.role === 'CEO/FOUNDER/DIRECTOR' ||
-                             activeUser?.role === 'PROJECT_COORDINATOR' ||
-                             activeUser?.role === 'TL' ||
-                             activeUser?.role === 'SUB_TL';
-
-    if (isPrivilegedRole && meetingsList.length > 0) {
-      // Check if popup already shown in session
+    if ((isCEO || isPC || isTL) && meetingsList.length > 0) {
       const popupShown = sessionStorage.getItem(`mra_mtg_popup_shown_${activeUser.id}`);
       if (!popupShown) {
         sessionStorage.setItem(`mra_mtg_popup_shown_${activeUser.id}`, 'true');
         const upcomingCount = meetingsList.length;
-        const mtgNames = meetingsList.slice(0, 2).map(m => `• "${m.title}" (Created by ${m.organizer} on ${m.date} @ ${m.time})`).join('\n');
+        const mtgNames = meetingsList.slice(0, 2).map(m => `• "${m.title}" (By ${m.organizer} on ${m.date} @ ${m.time})`).join('\n');
 
         showModalPopup({
-          title: `📅 Upcoming Scheduled Meetings Alert (${upcomingCount})`,
+          title: `📅 Scheduled Meetings Alert (${upcomingCount})`,
           message: `You have upcoming scheduled meetings:\n\n${mtgNames}\n\nReview details on your main dashboard screen.`,
           iconType: 'info',
           confirmText: 'View Dashboard'
@@ -90,11 +88,21 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
   const isSpecificDeptSelected = selectedDept && selectedDept !== 'ALL DEPARTMENTS';
 
-  const filteredUsers = usersList.filter(u => filterByDept(u.dept));
-  const filteredLeaves = leavesList.filter(l => filterByDept(l.dept));
-  const filteredMaterials = materialsList.filter(m => filterByDept(m.deptName));
-  const filteredWorkLogs = workLogsList.filter(w => filterByDept(w.fromDept) || filterByDept(w.toDept));
-  const filteredMeetings = meetingsList.filter(m => filterByDept(m.targetDept));
+  // Role-Based User List Visibility:
+  // - CEO & PC: Can view filtered users of selected dept or all depts
+  // - TL / Sub-TL: Can view ONLY members of their OWN department
+  // - Employee: CANNOT view any roster!
+  const getVisibleUsers = () => {
+    if (isNormalEmp) return []; // Employees cannot view roster
+    if (isTL) return usersList.filter(u => u.dept === activeUser?.dept); // TLs only see own team
+    return usersList.filter(u => filterByDept(u.dept)); // CEO & PC see selected dept
+  };
+
+  const visibleUsers = getVisibleUsers();
+  const filteredLeaves = leavesList.filter(l => isNormalEmp ? l.empId === activeUser.id : filterByDept(l.dept));
+  const filteredMaterials = materialsList.filter(m => isNormalEmp ? m.empId === activeUser.id : filterByDept(m.deptName));
+  const filteredWorkLogs = workLogsList.filter(w => isNormalEmp ? (w.receiverEmpId === activeUser.id || w.senderEmpId === activeUser.id) : (filterByDept(w.fromDept) || filterByDept(w.toDept)));
+  const filteredMeetings = meetingsList.filter(m => isNormalEmp ? m.targetDept === activeUser.dept : filterByDept(m.targetDept));
 
   // Compute Employee Work Performance Metrics
   const getEmployeeStats = (empId) => {
@@ -135,13 +143,8 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
   const topPerformer = getTopDepartmentPerformer(selectedDept);
 
-  // To-Do Work Tasks for Project Coordinator
+  // To-Do Work Tasks for Project Coordinator / User
   const pcToDoTasks = workLogsList.filter(w => w.receiverEmpId === activeUser?.id && !w.status.includes('Completed'));
-
-  const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
-  const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
-  const isHR = activeUser?.role === 'HR';
-  const isTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
 
   const handleScheduleMeetingSubmit = (e) => {
     e.preventDefault();
@@ -157,7 +160,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       title: '',
       organizer: activeUser?.name || '',
       organizerId: activeUser?.id || '',
-      targetDept: selectedDept !== 'ALL DEPARTMENTS' ? selectedDept : 'Hardware & Embedded Systems',
+      targetDept: selectedDept !== 'ALL DEPARTMENTS' ? selectedDept : (activeUser?.dept || 'Hardware & Embedded Systems'),
       date: new Date().toISOString().split('T')[0],
       time: '10:00 AM',
       agenda: '',
@@ -178,15 +181,15 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             Welcome back, <span className="text-gradient-gold">{activeUser?.name}</span>
           </h2>
           <p className="hero-subtitle">
-            {isPC && 'Project Coordinator Console: Select a specific department from the navbar dropdown to view its employee roster, top workers, and departmental tasks.'}
+            {isPC && 'Project Coordinator Console: Select a specific department from the navbar dropdown to view departmental logs, top workers, and tasks.'}
             {isCEO && 'CEO Executive Control: Department-wise overview of leaves, inventory, employees, and scheduled meetings.'}
-            {isTL && `Team Lead Dashboard for ${activeUser?.dept}: Team member tracking, leaves, and inventory.`}
-            {!isCEO && !isPC && !isTL && 'Employee Operations Console: Personal tasks and department overview.'}
+            {isTL && `Team Lead Dashboard for ${activeUser?.dept}: Team member tracking, leaves, and inventory requisitions.`}
+            {isNormalEmp && 'Employee Console: View your personal work transfer tasks, leave applications, and material requisitions.'}
           </p>
         </div>
 
-        {/* Top Performer Card (Visible per selected department) */}
-        {isSpecificDeptSelected && topPerformer && (
+        {/* Top Performer Card (Visible for CEO & PC when department selected) */}
+        {(isCEO || isPC) && isSpecificDeptSelected && topPerformer && (
           <div className="top-performer-card">
             <Award className="w-8 h-8 text-amber-400 mb-2" />
             <div className="top-title">Top Worker ({selectedDept})</div>
@@ -238,24 +241,26 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             <Users className="w-6 h-6" />
           </div>
           <div className="metric-info">
-            <span className="metric-label">Department Members</span>
-            <span className="metric-value">{filteredUsers.length} Employees</span>
+            <span className="metric-label">{isNormalEmp ? 'My Department' : 'Department Members'}</span>
+            <span className="metric-value">{isNormalEmp ? activeUser?.dept : `${visibleUsers.length} Employees`}</span>
             <span className="metric-sub">{selectedDept === 'ALL DEPARTMENTS' ? 'All Depts' : selectedDept}</span>
           </div>
         </div>
       </div>
 
-      {/* PROMINENT SCHEDULED MEETINGS SECTION ON MAIN SCREEN (For CEO, PC, TL, Sub-TL) */}
-      {(isCEO || isPC || isTL) && (
+      {/* REDESIGNED PROMINENT SCHEDULED MEETINGS SECTION (High-Contrast Glassmorphic Cards) */}
+      {(isCEO || isPC || isTL || isNormalEmp) && (
         <div className="glow-card p-5 mb-6 border-cyan-500/30">
           <div className="card-section-header justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-cyan-400" />
               <h3>📅 Upcoming Scheduled Meetings & Syncs ({meetingsList.length})</h3>
             </div>
-            <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-gold btn-xs">
-              <PlusCircle className="w-3.5 h-3.5 mr-1" /> Schedule New Meeting
-            </button>
+            {(isCEO || isPC || isTL) && (
+              <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-gold btn-xs">
+                <PlusCircle className="w-3.5 h-3.5 mr-1" /> Schedule New Meeting
+              </button>
+            )}
           </div>
 
           {/* Schedule Meeting Form Modal */}
@@ -264,10 +269,10 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
               <h4 className="text-sm font-bold text-cyan-300 mb-3">🗓️ Schedule New Meeting</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs mb-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Meeting Name / Title *</label>
+                  <label className="text-slate-400 block mb-1">Meeting Title *</label>
                   <input
                     type="text"
-                    placeholder="e.g. Q3 Hardware & Material Sync"
+                    placeholder="e.g. Q3 Hardware Integration Sync"
                     value={meetingFormData.title}
                     onChange={e => setMeetingFormData({ ...meetingFormData, title: e.target.value })}
                     required
@@ -305,7 +310,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   </div>
                 </div>
                 <div className="md:col-span-3">
-                  <label className="text-slate-400 block mb-1">Agenda & Description *</label>
+                  <label className="text-slate-400 block mb-1">Agenda & Brief *</label>
                   <textarea
                     placeholder="Enter meeting agenda..."
                     value={meetingFormData.agenda}
@@ -322,34 +327,42 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             </form>
           )}
 
-          {/* Scheduled Meetings List Display (Name, Created By, Time & Day) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Clean Redesigned Meetings Cards Grid */}
+          <div className="meetings-grid-container">
             {meetingsList.length === 0 ? (
-              <p className="text-xs text-slate-500 italic col-span-2">No upcoming meetings scheduled.</p>
+              <p className="text-xs text-slate-500 italic col-span-full">No upcoming meetings scheduled.</p>
             ) : (
               meetingsList.map(mtg => (
-                <div
-                  key={mtg.id}
-                  onClick={() => setSelectedMeetingModal(mtg)}
-                  className="bg-slate-900/80 p-4 rounded-xl border border-cyan-500/25 hover:border-cyan-400 transition-all cursor-pointer flex justify-between items-center"
-                >
-                  <div className="space-y-1">
-                    <div className="font-bold text-white text-sm flex items-center gap-2">
-                      <Video className="w-4 h-4 text-cyan-400" />
-                      <span>{mtg.title}</span>
+                <div key={mtg.id} className="meeting-card-item">
+                  <div className="meeting-card-header">
+                    <div className="flex items-start gap-2">
+                      <Video className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                      <div className="meeting-title-text">{mtg.title}</div>
                     </div>
-                    <div className="text-xs text-amber-300">
-                      <strong>Created By:</strong> {mtg.organizer}
+                    <span className="meeting-dept-badge">{mtg.targetDept}</span>
+                  </div>
+
+                  <div className="meeting-meta-row">
+                    <div className="meta-item">
+                      <User className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="meta-label">Created By:</span>
+                      <span className="meta-val-gold">{mtg.organizer}</span>
                     </div>
-                    <div className="text-xs text-slate-300 font-mono flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-cyan-400 inline" />
-                      <span><strong>Date & Time:</strong> {mtg.date} at {mtg.time}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-400">
-                      Dept: {mtg.targetDept}
+
+                    <div className="meta-item">
+                      <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="meta-label">Date & Time:</span>
+                      <span className="meta-val-time">{mtg.date} @ {mtg.time}</span>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-slate-500" />
+
+                  <div className="meeting-card-footer">
+                    <span className="text-[11px] text-slate-400 font-mono">ID: {mtg.id}</span>
+                    <button onClick={() => setSelectedMeetingModal(mtg)} className="btn-view-meeting">
+                      <span>View Details</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -379,15 +392,16 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
         </div>
       )}
 
-      {/* EMPLOYEE LIST & LEAVE PORTAL ISOLATION (USER REQUIREMENT):
-          Do NOT render employee list for Project Coordinator or CEO/Founder/Director
-          UNTIL they explicitly open/select a specific department! */}
-      {(!isSpecificDeptSelected && (isCEO || isPC)) ? (
+      {/* EMPLOYEE ROSTER ACCESS CONTROL (STRICT USER MATRIX):
+          - CEO / PC: Can view roster when department selected
+          - TL / Sub-TL: Can view ONLY their own department members
+          - Normal Employee: CANNOT view any employee roster! */}
+      {isNormalEmp ? null : (!isSpecificDeptSelected && (isCEO || isPC)) ? (
         <div className="glow-card p-6 text-center border-amber-500/30 my-4">
           <Building className="w-10 h-10 text-amber-400 mx-auto mb-3 opacity-80" />
           <h4 className="text-base font-bold text-white mb-1">Select a Department to View Employees & Leave Status</h4>
           <p className="text-xs text-slate-400 max-w-md mx-auto mb-3">
-            The employee roster and leave status list are hidden in global view. Please select a specific department from the navbar dropdown above to open its employee list.
+            Select a specific department from the navbar dropdown above to open its employee roster.
           </p>
           <div className="flex justify-center gap-2">
             {['Hardware & Embedded Systems', 'Software & AI Systems', 'Inventory & Logistics', 'Project Management', 'Human Resources'].map(dept => (
@@ -402,18 +416,18 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           </div>
         </div>
       ) : (
-        /* Render Employee Roster when a specific department is selected OR for TL/Employees */
+        /* Render Employee Roster for CEO/PC when department selected, or TL for own team */
         <div className="glow-card p-5">
           <div className="card-section-header justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-sky-400" />
-              <h3>Employee Roster & Leave Status — {selectedDept} ({filteredUsers.length})</h3>
+              <h3>Employee Roster & Leave Status — {isTL ? activeUser?.dept : selectedDept} ({visibleUsers.length})</h3>
             </div>
-            <span className="text-xs text-slate-400">Click any employee for detailed profile modal</span>
+            <span className="text-xs text-slate-400">Click employee for detailed profile modal</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredUsers.map(emp => {
+            {visibleUsers.map(emp => {
               const stats = getEmployeeStats(emp.id);
               return (
                 <div
@@ -452,7 +466,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           <div className="modal-content glow-card">
             <div className="modal-header">
               <div className="flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-cyan-400" />
+                <Video className="w-6 h-6 text-cyan-400" />
                 <h3 className="text-lg font-bold text-white">{selectedMeetingModal.title}</h3>
               </div>
               <button onClick={() => setSelectedMeetingModal(null)} className="icon-btn-ghost">✕</button>

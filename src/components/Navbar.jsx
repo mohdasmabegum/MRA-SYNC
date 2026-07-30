@@ -19,7 +19,12 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
   const { showToast, showModalPopup } = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const DEPARTMENTS = [
+  const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
+  const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
+  const isTLOrSubTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
+  const isNormalEmp = activeUser?.role === 'EMPLOYEE';
+
+  const DEPARTMENTS = isCEO || isPC ? [
     'ALL DEPARTMENTS',
     'Executive Management',
     'Project Management',
@@ -27,7 +32,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
     'Software & AI Systems',
     'Human Resources',
     'Inventory & Logistics'
-  ];
+  ] : [activeUser?.dept || 'Hardware & Embedded Systems'];
 
   useEffect(() => {
     const checkUpdates = () => {
@@ -35,11 +40,11 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
       const leaves = getLeaves();
       let count = 0;
 
-      if (activeUser?.role === 'EMPLOYEE' || activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL') {
+      if (isNormalEmp || isTLOrSubTL) {
         const pendingWork = logs.filter(w => w.receiverEmpId === activeUser.id && w.status === 'Pending Acceptance');
         count += pendingWork.length;
       }
-      if (activeUser?.role === 'HR' || activeUser?.role === 'CEO/FOUNDER/DIRECTOR') {
+      if (activeUser?.role === 'HR' || isCEO) {
         const pendingLeaves = leaves.filter(l => l.status === 'Pending');
         count += pendingLeaves.length;
       }
@@ -61,7 +66,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
   const handleLogoutClick = () => {
     showModalPopup({
       title: 'Confirm Logout',
-      message: 'Are you sure you want to end your current portal session?',
+      message: 'Are you sure you want to end your current session?',
       iconType: 'logout',
       confirmText: 'Yes, Logout',
       cancelText: 'Cancel',
@@ -71,11 +76,6 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
       }
     });
   };
-
-  const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
-  const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
-  const isHR = activeUser?.role === 'HR';
-  const isTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
 
   return (
     <header className="navbar-container">
@@ -94,7 +94,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
         {/* Global Controls & CEO Shortcut */}
         <div className="nav-right-controls">
-          {/* High-Contrast Department Selector */}
+          {/* Department Selector */}
           <div className="dept-selector-wrapper">
             <Building className="w-4 h-4 text-amber-400" />
             <select

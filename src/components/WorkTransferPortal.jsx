@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { getUsers, getWorkLogs, addWorkLog, updateWorkLogStatus } from '../services/db';
 import { useToast } from '../context/ToastContext';
-import { ArrowRightLeft, PlusCircle, CheckCircle2, XCircle, FileCheck, HardDrive, AlertTriangle, Send, Boxes } from 'lucide-react';
+import { ArrowRightLeft, PlusCircle, FileCheck, HardDrive, Boxes, ShieldAlert } from 'lucide-react';
 
 export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
   const { showToast, showModalPopup } = useToast();
   const [workLogs, setWorkLogs] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [showForm, setShowForm] = useState(false);
+
+  const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
+  const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
+  const isTLOrSubTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
+  const isNormalEmp = activeUser?.role === 'EMPLOYEE';
 
   const [formData, setFormData] = useState({
     workAlloter: activeUser?.name || '',
@@ -20,15 +25,6 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
     hardwareDocInfo: '',
     requirement: 'Quick'
   });
-
-  const DEPARTMENTS = [
-    'Hardware & Embedded Systems',
-    'Software & AI Systems',
-    'Inventory & Logistics',
-    'Project Management',
-    'Human Resources',
-    'Executive Management'
-  ];
 
   useEffect(() => {
     loadData();
@@ -56,7 +52,6 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Mandatory Hardware & Doc Info Validation
     if (!formData.hardwareDocInfo || formData.hardwareDocInfo.trim().length < 10) {
       showToast('Hardware & Document details are MANDATORY! Please specify schematic versions, documentation, and hardware condition.', 'error', 'Mandatory Verification Failed');
       return;
@@ -70,7 +65,6 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
     const newLog = addWorkLog(formData);
     showToast(`Work transfer request #${newLog.id} created! Sent to ${formData.receiverName}'s account inbox.`, 'success', 'Request Created');
 
-    // Trigger Popup alert for receiver
     showModalPopup({
       title: 'Work Request Created & Dispatched',
       message: `Work request for "${formData.projectName}" has been successfully assigned to ${formData.receiverName} (${formData.toDept}). A notification pop-up will appear in their account.`,
@@ -117,7 +111,6 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
 
     showToast(`Work request #${id} marked as COMPLETED ✅! Alert popped up to sender (${task.workAlloter}).`, 'success', 'Task Complete!');
 
-    // Show popup notification to sender
     showModalPopup({
       title: '✅ Work Task Completed Notification',
       message: `Requested work for "${task.projectName}" has been marked COMPLETED by ${task.receiverName}. Database work logs updated.`,
@@ -125,6 +118,16 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
       confirmText: 'Great!'
     });
   };
+
+  // STRICT ACCESS CONTROL FILTERING:
+  // - Normal employees: Strictly ONLY their own work logs (received or sent)
+  // - TL / Sub-TL: Work logs belonging to their department members
+  // - CEO & PC: All work logs
+  const displayedWorkLogs = workLogs.filter(w => {
+    if (isNormalEmp) return w.receiverEmpId === activeUser?.id || w.senderEmpId === activeUser?.id;
+    if (isTLOrSubTL) return w.fromDept === activeUser?.dept || w.toDept === activeUser?.dept;
+    return true; // CEO and PC see all
+  });
 
   return (
     <div className="portal-page-container">
@@ -148,7 +151,7 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
       {showForm && (
         <form onSubmit={handleSubmit} className="glow-card form-card p-6 mb-6">
           <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-2">
-            🔄 Create Cross-Department Work Transfer
+            🔄 Create Work Transfer Task
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -169,7 +172,7 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
                 onChange={e => handleReceiverSelect(e.target.value)}
                 required
               >
-                <option value="">Select Employee from List...</option>
+                <option value="">Select Target Employee...</option>
                 {usersList.filter(u => u.id !== activeUser?.id).map(u => (
                   <option key={u.id} value={u.id}>
                     {u.name} ({u.dept} - {u.id})
@@ -227,8 +230,9 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
 
       {/* Work Logs Master Table */}
       <div className="glow-card p-5">
-        <h3 className="text-md font-bold text-slate-200 mb-4">
-          Transfer Track of Work Log Sheet ({workLogs.length})
+        <h3 className="text-md font-bold text-slate-200 mb-4 flex items-center justify-between">
+          <span>Transfer Track of Work Log Sheet ({displayedWorkLogs.length})</span>
+          {isNormalEmp && <span className="text-xs text-amber-400 font-mono">Scope: Account Owner Personal Logs</span>}
         </h3>
 
         <div className="table-responsive">
@@ -247,77 +251,81 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
               </tr>
             </thead>
             <tbody>
-              {workLogs.map(w => {
-                const isReceiver = w.receiverEmpId === activeUser?.id;
-                const isSender = w.senderEmpId === activeUser?.id;
+              {displayedWorkLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="text-center py-4 text-slate-500 italic">No work transfer logs found for your account scope.</td>
+                </tr>
+              ) : (
+                displayedWorkLogs.map(w => {
+                  const isReceiver = w.receiverEmpId === activeUser?.id;
 
-                return (
-                  <tr key={w.id} className={isReceiver ? 'bg-amber-500/5' : ''}>
-                    <td className="font-mono text-emerald-400 text-xs font-semibold">{w.id}</td>
-                    <td>
-                      <div className="font-bold text-white">{w.projectName}</div>
-                      <div className="text-xs text-slate-400">{w.fromDept} → {w.toDept}</div>
-                    </td>
-                    <td className="text-xs text-slate-300">{w.workAlloter}</td>
-                    <td className="text-xs font-medium text-amber-300">{w.receiverName} ({w.receiverEmpId})</td>
-                    <td className="text-xs text-slate-300 max-w-xs truncate" title={w.hardwareDocInfo}>
-                      <FileCheck className="w-3 h-3 text-cyan-400 inline mr-1" />
-                      {w.hardwareDocInfo}
-                    </td>
-                    <td>
-                      <span className={`badge-tag ${w.requirement === 'Emergency' ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-300'}`}>
-                        {w.requirement}
-                      </span>
-                    </td>
-                    <td className="text-xs text-slate-400">
-                      <div>Created: {w.createdDate}</div>
-                      <div>Done: {w.completedDate}</div>
-                    </td>
-                    <td>
-                      <span className={`status-pill ${
-                        w.status.includes('Completed') ? 'pill-active' :
-                        w.status.includes('Accepted') ? 'pill-pending' : 'pill-leave'
-                      }`}>
-                        {w.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex flex-col gap-1">
-                        {/* Receiver Actions */}
-                        {isReceiver && w.status === 'Pending Acceptance' && (
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => handleAcceptTask(w.id, true)} className="btn-emerald btn-xs">
-                              Accept (HW Recv)
-                            </button>
-                            <button onClick={() => handleRejectTask(w.id)} className="btn-amber btn-xs">
-                              Reject
-                            </button>
-                          </div>
-                        )}
+                  return (
+                    <tr key={w.id} className={isReceiver ? 'bg-amber-500/5' : ''}>
+                      <td className="font-mono text-emerald-400 text-xs font-semibold">{w.id}</td>
+                      <td>
+                        <div className="font-bold text-white">{w.projectName}</div>
+                        <div className="text-xs text-slate-400">{w.fromDept} → {w.toDept}</div>
+                      </td>
+                      <td className="text-xs text-slate-300">{w.workAlloter}</td>
+                      <td className="text-xs font-medium text-amber-300">{w.receiverName} ({w.receiverEmpId})</td>
+                      <td className="text-xs text-slate-300 max-w-xs truncate" title={w.hardwareDocInfo}>
+                        <FileCheck className="w-3 h-3 text-cyan-400 inline mr-1" />
+                        {w.hardwareDocInfo}
+                      </td>
+                      <td>
+                        <span className={`badge-tag ${w.requirement === 'Emergency' ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-300'}`}>
+                          {w.requirement}
+                        </span>
+                      </td>
+                      <td className="text-xs text-slate-400">
+                        <div>Created: {w.createdDate}</div>
+                        <div>Done: {w.completedDate}</div>
+                      </td>
+                      <td>
+                        <span className={`status-pill ${
+                          w.status.includes('Completed') ? 'pill-active' :
+                          w.status.includes('Accepted') ? 'pill-pending' : 'pill-leave'
+                        }`}>
+                          {w.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex flex-col gap-1">
+                          {isReceiver && w.status === 'Pending Acceptance' && (
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => handleAcceptTask(w.id, true)} className="btn-emerald btn-xs">
+                                Accept (HW Recv)
+                              </button>
+                              <button onClick={() => handleRejectTask(w.id)} className="btn-amber btn-xs">
+                                Reject
+                              </button>
+                            </div>
+                          )}
 
-                        {isReceiver && w.status.includes('Accepted') && (
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => handleMarkComplete(w.id)} className="btn-gold btn-xs font-bold">
-                              Mark Complete ✅
-                            </button>
-                            <button onClick={onNavigateToInventory} className="btn-secondary btn-xs" title="Request Material from Inventory">
-                              <Boxes className="w-3 h-3 inline mr-1" /> Req Material
-                            </button>
-                          </div>
-                        )}
+                          {isReceiver && w.status.includes('Accepted') && (
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => handleMarkComplete(w.id)} className="btn-gold btn-xs font-bold">
+                                Mark Complete ✅
+                              </button>
+                              <button onClick={onNavigateToInventory} className="btn-secondary btn-xs" title="Request Material from Inventory">
+                                <Boxes className="w-3 h-3 inline mr-1" /> Req Material
+                              </button>
+                            </div>
+                          )}
 
-                        {w.status.includes('Completed') && (
-                          <span className="text-xs text-emerald-400 font-semibold">Verified Complete ✅</span>
-                        )}
+                          {w.status.includes('Completed') && (
+                            <span className="text-xs text-emerald-400 font-semibold">Verified Complete ✅</span>
+                          )}
 
-                        {w.status === 'Rejected' && (
-                          <span className="text-xs text-rose-400 italic">Reason: {w.rejectionReason}</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                          {w.status === 'Rejected' && (
+                            <span className="text-xs text-rose-400 italic">Reason: {w.rejectionReason}</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
