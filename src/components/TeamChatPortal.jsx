@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getChatMessages, sendChatMessage } from '../services/db';
 import { useToast } from '../context/ToastContext';
-import { MessageSquare, Send, ShieldCheck, User, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Send, ShieldCheck, User, ArrowLeft, Users, Paperclip } from 'lucide-react';
 
 export const TeamChatPortal = ({ activeUser, onBackToDashboard }) => {
   const { showToast } = useToast();
@@ -72,57 +72,66 @@ export const TeamChatPortal = ({ activeUser, onBackToDashboard }) => {
         <span>Return to Dashboard</span>
       </button>
 
-      {/* Header Bar */}
-      <div className="portal-header-bar glow-card border-amber-500/40">
-        <div>
-          <h2 className="portal-title flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-amber-400" />
-            Project Management Team Chat
-          </h2>
-          <p className="portal-subtitle">Real-time collaboration channel for CEO, Project Coordinators & PM team members.</p>
+      {/* Main Chat Container Card */}
+      <div className="chat-container">
+        {/* Fixed Top Chat Header Bar */}
+        <div className="chat-header">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-sky-500/10 border border-sky-500/30">
+              <MessageSquare className="w-5 h-5 text-sky-400" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-base">Project Management Team Channel</h3>
+              <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Active Executive & PM Collaboration • Real-time Stream</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="badge-tag bg-sky-500/20 text-sky-300 font-bold">
+              <Users className="w-3 h-3 inline mr-1" /> PM Channel
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Chat Container */}
-      <div className="glow-card p-4 flex flex-col h-[520px]">
-        {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
-          {messages.map(msg => {
-            const isMe = msg.senderId === activeUser?.id;
+        {/* Scrollable Chat Feed */}
+        <div className="chat-feed">
+          {messages.length === 0 ? (
+            <div className="text-center py-12 text-slate-500 text-xs italic">
+              No chat messages yet. Start the conversation with the Project Management team below!
+            </div>
+          ) : (
+            messages.map(msg => {
+              const isMe = msg.senderId === activeUser?.id;
 
-            return (
-              <div
-                key={msg.id}
-                className={`flex items-start gap-2.5 ${isMe ? 'flex-row-reverse' : ''}`}
-              >
-                <img src={msg.avatar} alt={msg.senderName} className="w-8 h-8 rounded-full border border-amber-400/50 mt-1" />
-                <div className={`max-w-md rounded-xl p-3 text-xs ${
-                  isMe
-                    ? 'bg-amber-500/20 border border-amber-500/40 text-white rounded-tr-none'
-                    : 'bg-slate-900/90 border border-slate-800 text-slate-200 rounded-tl-none'
-                }`}>
-                  <div className="flex items-center justify-between gap-4 mb-1">
-                    <span className="font-bold text-amber-400 text-[11px]">{msg.senderName}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{msg.timestamp}</span>
+              return (
+                <div key={msg.id} className={`chat-row ${isMe ? 'chat-row-me' : 'chat-row-other'}`}>
+                  <img src={msg.avatar} alt={msg.senderName} className="chat-avatar-img" />
+
+                  <div className={`chat-bubble ${isMe ? 'chat-bubble-me' : 'chat-bubble-other'}`}>
+                    <div className="chat-sender-name">{msg.senderName}</div>
+                    <div className="whitespace-pre-wrap">{msg.text}</div>
+                    <div className="chat-time-tag">{msg.timestamp}</div>
                   </div>
-                  <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Send Input Bar */}
-        <form onSubmit={handleSendMessage} className="flex gap-2 border-t border-slate-800 pt-3">
+        {/* Pinned Bottom Input Form Bar */}
+        <form onSubmit={handleSendMessage} className="chat-input-bar">
           <input
             type="text"
-            placeholder="Type your message to Project Management team..."
+            placeholder="Write a message to Project Management team..."
             value={inputMessage}
             onChange={e => setInputMessage(e.target.value)}
             className="flex-1"
           />
-          <button type="submit" className="btn-gold">
+          <button type="submit" className="btn-gold font-bold">
             <Send className="w-4 h-4 mr-1" /> Send
           </button>
         </form>

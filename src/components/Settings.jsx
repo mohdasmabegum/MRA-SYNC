@@ -1,18 +1,37 @@
 import React, { useState } from 'react';
 import { useToast } from '../context/ToastContext';
-import { Sun, Moon, LogOut, User, ShieldCheck, Mail, Database, Palette, Settings as SettingsIcon, ArrowLeft, BellRing, Smartphone, CheckCircle } from 'lucide-react';
+import {
+  Sun,
+  Moon,
+  LogOut,
+  User,
+  ShieldCheck,
+  Mail,
+  Database,
+  Palette,
+  Settings as SettingsIcon,
+  ArrowLeft,
+  BellRing,
+  Smartphone,
+  CheckCircle,
+  Eye,
+  Building,
+  Key,
+  Shield
+} from 'lucide-react';
 import { exportDatabaseExcelCSV, exportDatabaseJSON } from '../services/db';
 
 export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashboard }) => {
   const { showToast, showModalPopup } = useToast();
   const [pushEnabled, setPushEnabled] = useState(true);
+  const [showFullProfileModal, setShowFullProfileModal] = useState(false);
   const [pushToken, setPushToken] = useState(`MRA-PUSH-TOK-2026-${Math.floor(100000 + Math.random() * 900000)}`);
 
   const handleThemeChange = (newTheme) => {
     if (newTheme === theme) return;
     setTheme(newTheme);
     localStorage.setItem('mra_app_theme', newTheme);
-    showToast(`Switched to ${newTheme === 'light' ? 'Professional Light' : 'Luxury Dark'} Theme`, 'info');
+    showToast(`Switched to ${newTheme === 'light' ? 'Professional Light' : 'Deep Midnight Dark'} Theme`, 'info');
   };
 
   const handleTogglePush = () => {
@@ -53,65 +72,78 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
       <div className="portal-header-bar glow-card">
         <div>
           <h2 className="portal-title flex items-center gap-2">
-            <SettingsIcon className="w-6 h-6 text-amber-400" />
+            <SettingsIcon className="w-6 h-6 text-sky-400" />
             Portal Settings & Preferences
           </h2>
-          <p className="portal-subtitle">Customize theme appearance, view profile online status, and configure push notifications.</p>
+          <p className="portal-subtitle">Manage profile details, theme appearance, online status, and push notification tokens.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 1. User Account Profile Details with DP & Online Status */}
-        <div className="glow-card p-6">
-          <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
-            <User className="w-5 h-5 text-sky-400" />
-            Profile DP & Account Details
-          </h3>
+        {/* 1. Profile DP & Account Overview Card */}
+        <div className="glow-card p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+              <h3 className="text-md font-bold text-sky-400 flex items-center gap-2">
+                <User className="w-5 h-5 text-sky-400" />
+                Profile DP & Account Details
+              </h3>
+              <button
+                onClick={() => setShowFullProfileModal(true)}
+                className="btn-gold btn-xs font-bold"
+                title="View Complete Profile Info"
+              >
+                <Eye className="w-3.5 h-3.5 mr-1" /> View Full Info
+              </button>
+            </div>
 
-          <div className="space-y-4 text-xs">
-            <div className="flex items-center gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+            <div className="profile-card-header mb-4">
               <div className="relative">
-                <img src={activeUser?.avatar} alt={activeUser?.name} className="w-16 h-16 rounded-full border-2 border-amber-400" />
+                <img src={activeUser?.avatar} alt={activeUser?.name} className="profile-dp-img" />
                 <span className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Online Active"></span>
               </div>
 
-              <div>
-                <div className="font-bold text-white text-base">{activeUser?.name}</div>
-                <div className="text-amber-400 font-mono text-xs">ID: {activeUser?.id} • <span className="text-emerald-400 font-semibold">🟢 Online</span></div>
-                <div className="text-slate-400 text-xs mt-0.5">{activeUser?.dept}</div>
+              <div className="space-y-1">
+                <div className="font-bold text-lg text-white">{activeUser?.name}</div>
+                <div className="text-sky-400 font-mono text-xs">User ID: {activeUser?.id}</div>
+                <div className="text-emerald-400 font-semibold text-xs flex items-center gap-1">
+                  <span>🟢 Online & Active</span>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                <span className="text-slate-400 block text-[11px]">Role Designation</span>
-                <span className="font-bold text-amber-300">{activeUser?.role}</span>
+            {/* Organised Label-Value Grid */}
+            <div className="grid grid-cols-1 gap-3 text-xs">
+              <div className="settings-field-box">
+                <div className="settings-field-label">Role Designation</div>
+                <div className="settings-field-value text-sky-400">{activeUser?.role}</div>
               </div>
-              <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                <span className="text-slate-400 block text-[11px]">Assigned Dept</span>
-                <span className="font-bold text-white">{activeUser?.dept}</span>
-              </div>
-            </div>
 
-            <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800 flex justify-between items-center">
-              <div>
-                <span className="text-slate-400 block text-[11px]">Corporate Email Address</span>
-                <span className="font-semibold text-white">{activeUser?.email}</span>
+              <div className="settings-field-box">
+                <div className="settings-field-label">Assigned Department</div>
+                <div className="settings-field-value">{activeUser?.dept}</div>
               </div>
-              <Mail className="w-4 h-4 text-slate-500" />
+
+              <div className="settings-field-box flex justify-between items-center">
+                <div>
+                  <div className="settings-field-label">Corporate Email Address</div>
+                  <div className="settings-field-value text-slate-200">{activeUser?.email}</div>
+                </div>
+                <Mail className="w-4 h-4 text-sky-400 shrink-0" />
+              </div>
             </div>
           </div>
         </div>
 
         {/* 2. Theme & Appearance Settings */}
-        <div className="glow-card p-6">
-          <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Palette className="w-5 h-5 text-amber-400" />
-            Appearance & Color Theme
-          </h3>
+        <div className="glow-card p-6 flex flex-col justify-between">
+          <div>
+            <h3 className="text-md font-bold text-sky-400 mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
+              <Palette className="w-5 h-5 text-amber-400" />
+              Appearance & Color Theme
+            </h3>
 
-          <div className="space-y-4">
-            <p className="text-xs text-slate-400">Choose your preferred visual theme for the MRA SYNC portal:</p>
+            <p className="text-xs text-slate-400 mb-4">Select your visual theme preference for MRA SYNC:</p>
 
             <div className="grid grid-cols-2 gap-4">
               {/* Dark Theme Option */}
@@ -119,17 +151,17 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
                 onClick={() => handleThemeChange('dark')}
                 className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between h-32 ${
                   theme === 'dark'
-                    ? 'bg-slate-900 border-amber-400 shadow-lg shadow-amber-500/10'
+                    ? 'bg-slate-900 border-sky-400 shadow-lg shadow-sky-500/10'
                     : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <Moon className="w-6 h-6 text-amber-400" />
-                  {theme === 'dark' && <span className="badge-tag bg-amber-500/20 text-amber-300">Active</span>}
+                  <Moon className="w-6 h-6 text-sky-400" />
+                  {theme === 'dark' && <span className="badge-tag bg-sky-500/20 text-sky-300 font-bold">Active</span>}
                 </div>
                 <div>
-                  <div className="font-bold text-white text-sm">Luxury Dark Theme</div>
-                  <div className="text-[11px] text-slate-400">Obsidian black & gold metallic contrast</div>
+                  <div className="font-bold text-white text-sm">Deep Midnight Dark</div>
+                  <div className="text-[11px] text-slate-400">Midnight navy & slate blue contrast</div>
                 </div>
               </button>
 
@@ -138,13 +170,13 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
                 onClick={() => handleThemeChange('light')}
                 className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between h-32 ${
                   theme === 'light'
-                    ? 'bg-slate-100 border-amber-500 shadow-lg shadow-amber-500/10 text-slate-900'
+                    ? 'bg-slate-100 border-sky-500 shadow-lg shadow-sky-500/10 text-slate-900'
                     : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <div className="flex justify-between items-center">
                   <Sun className="w-6 h-6 text-amber-500" />
-                  {theme === 'light' && <span className="badge-tag bg-amber-500/20 text-amber-700">Active</span>}
+                  {theme === 'light' && <span className="badge-tag bg-sky-500/20 text-sky-700 font-bold">Active</span>}
                 </div>
                 <div>
                   <div className={`font-bold text-sm ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Professional Light</div>
@@ -158,7 +190,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
         {/* 3. Push Notification Token & Mobile Preferences */}
         <div className="glow-card p-6 md:col-span-2">
           <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
-            <BellRing className="w-5 h-5 text-cyan-400" />
+            <BellRing className="w-5 h-5 text-sky-400" />
             Real-time Background Push Notification Token
           </h3>
 
@@ -168,7 +200,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
                 <Smartphone className="w-4 h-4 text-emerald-400" /> Device Notification Token (PC & Mobile)
               </div>
               <p className="text-slate-400">This token enables real-time background meeting reminders and work transfer notifications across mobile and web.</p>
-              <div className="font-mono bg-slate-900/80 p-2 rounded border border-cyan-500/30 text-cyan-300 select-all">
+              <div className="font-mono bg-slate-900/80 p-2.5 rounded border border-sky-500/30 text-sky-300 select-all font-semibold">
                 {pushToken}
               </div>
             </div>
@@ -215,6 +247,67 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
           </div>
         </div>
       </div>
+
+      {/* FULL COMPLETE PROFILE DETAILS MODAL */}
+      {showFullProfileModal && (
+        <div className="modal-backdrop">
+          <div className="modal-content glow-card max-w-md">
+            <div className="modal-header">
+              <div className="flex items-center gap-3">
+                <img src={activeUser?.avatar} alt={activeUser?.name} className="w-12 h-12 rounded-full border-2 border-sky-400" />
+                <div>
+                  <h3 className="text-lg font-bold text-white">{activeUser?.name}</h3>
+                  <div className="text-xs text-sky-400 font-mono">User ID: {activeUser?.id}</div>
+                </div>
+              </div>
+              <button onClick={() => setShowFullProfileModal(false)} className="icon-btn-ghost">✕</button>
+            </div>
+
+            <div className="modal-body space-y-3 text-xs">
+              <div className="settings-field-box">
+                <div className="settings-field-label">Full Account Name</div>
+                <div className="settings-field-value">{activeUser?.name}</div>
+              </div>
+
+              <div className="settings-field-box">
+                <div className="settings-field-label">Unique Employee ID</div>
+                <div className="settings-field-value font-mono text-sky-400">{activeUser?.id}</div>
+              </div>
+
+              <div className="settings-field-box">
+                <div className="settings-field-label">Role Designation</div>
+                <div className="settings-field-value text-amber-400">{activeUser?.role}</div>
+              </div>
+
+              <div className="settings-field-box">
+                <div className="settings-field-label">Department</div>
+                <div className="settings-field-value">{activeUser?.dept}</div>
+              </div>
+
+              <div className="settings-field-box">
+                <div className="settings-field-label">Corporate Email Address</div>
+                <div className="settings-field-value text-slate-200">{activeUser?.email}</div>
+              </div>
+
+              <div className="settings-field-box">
+                <div className="settings-field-label">System Online Status</div>
+                <div className="settings-field-value text-emerald-400">🟢 Online & Active</div>
+              </div>
+
+              <div className="settings-field-box">
+                <div className="settings-field-label">Push Notification Token</div>
+                <div className="settings-field-value font-mono text-xs text-sky-300">{pushToken}</div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button onClick={() => setShowFullProfileModal(false)} className="btn-gold w-full">
+                Close Full Profile Drawer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -159,13 +159,13 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             className="nav-icon-btn"
             title={`Switch to ${theme === 'light' ? 'Luxury Dark' : 'Professional Light'} Theme`}
           >
-            {theme === 'light' ? <Moon className="w-5 h-5 text-amber-600" /> : <Sun className="w-5 h-5 text-amber-400" />}
+            {theme === 'light' ? <Moon className="w-5 h-5 text-amber-600" /> : <Sun className="w-5 h-5 text-sky-400" />}
           </button>
 
           {/* Department Selector (VISIBLE ONLY FOR CEO, FOUNDER, DIRECTOR, PC, HR) */}
           {canSwitchDepts && (
             <div className="dept-selector-wrapper">
-              <Building className="w-4 h-4 text-amber-400" />
+              <Building className="w-4 h-4 text-sky-400" />
               <select
                 value={selectedDept}
                 onChange={e => setSelectedDept(e.target.value)}
@@ -187,7 +187,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
               className={`ceo-shortcut-btn ${activeTab === 'ceo_db' ? 'active' : ''}`}
               title="Exclusive Backend Database Access for CEO / Director"
             >
-              <Database className="w-4 h-4 text-amber-300 animate-pulse" />
+              <Database className="w-4 h-4 text-sky-400 animate-pulse" />
               <span>⚡ CEO Raw Database</span>
             </button>
           )}
@@ -204,12 +204,12 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             </div>
 
             {showNotifDropdown && (
-              <div className="absolute right-0 mt-2 w-80 glow-card p-4 z-50 border border-cyan-500/40 shadow-2xl text-xs space-y-2">
+              <div className="absolute right-0 mt-2 w-80 notif-dropdown-card p-4 z-50 rounded-xl text-xs space-y-2">
                 <div className="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
-                  <span className="font-bold text-white flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-amber-400" /> Notifications & Reminders ({notificationsList.length})
+                  <span className="font-bold notif-header-title flex items-center gap-1">
+                    <Clock className="w-4 h-4 text-amber-500" /> Notifications & Reminders ({notificationsList.length})
                   </span>
-                  <button onClick={() => setShowNotifDropdown(false)} className="text-slate-400 hover:text-white">
+                  <button onClick={() => setShowNotifDropdown(false)} className="text-slate-400 hover:text-rose-500">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -222,13 +222,13 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
                       <div
                         key={n.id}
                         onClick={() => handleNotifItemClick(n.targetTab)}
-                        className="bg-slate-900/90 hover:bg-slate-800 p-2.5 rounded border border-slate-800 flex justify-between items-center cursor-pointer transition-all"
+                        className="notif-item-card p-2.5 rounded-lg flex justify-between items-center cursor-pointer transition-all"
                       >
                         <div>
-                          <div className="font-bold text-cyan-300">{n.title}</div>
-                          <div className="text-slate-300 text-[11px]">{n.message}</div>
+                          <div className="notif-item-title">{n.title}</div>
+                          <div className="notif-item-msg text-[11px]">{n.message}</div>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-amber-400 shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-sky-500 shrink-0" />
                       </div>
                     ))
                   )}
@@ -307,7 +307,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
               onClick={() => handleTabChangeSilently('chat')}
               className={`nav-link ${activeTab === 'chat' ? 'active' : ''}`}
             >
-              <MessageSquare className="w-4 h-4 text-amber-400" />
+              <MessageSquare className="w-4 h-4 text-sky-400" />
               <span>PM Team Chat</span>
             </button>
           )}
