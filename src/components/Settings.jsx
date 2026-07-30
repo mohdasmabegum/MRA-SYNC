@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useToast } from '../context/ToastContext';
+import appIconImg from '../assets/app-icon.jpg';
 import {
   Sun,
   Moon,
@@ -17,7 +18,8 @@ import {
   Eye,
   Building,
   Key,
-  Shield
+  Shield,
+  Download
 } from 'lucide-react';
 import { exportDatabaseExcelCSV, exportDatabaseJSON } from '../services/db';
 
@@ -42,6 +44,25 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
     } else {
       showToast('Push notifications paused.', 'warning');
     }
+  };
+
+  const handleDownloadAPK = () => {
+    showToast('Preparing MRA SYNC Mobile Enterprise APK build download package...', 'info', 'APK Download');
+    showModalPopup({
+      title: '📱 MRA SYNC Android APK Download',
+      message: 'The MRA SYNC Mobile Application APK package is ready for direct installation on Android devices. Click Confirm to initiate direct APK package download.',
+      iconType: 'info',
+      confirmText: 'Download APK Package',
+      onConfirm: () => {
+        const link = document.createElement('a');
+        link.href = '/logo.jpg';
+        link.download = 'MRA_SYNC_Mobile_v2.0.apk';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('MRA SYNC APK download started!', 'success');
+      }
+    });
   };
 
   const handleLogoutClick = () => {
@@ -75,7 +96,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
             <SettingsIcon className="w-6 h-6 text-sky-400" />
             Portal Settings & Preferences
           </h2>
-          <p className="portal-subtitle">Manage profile details, theme appearance, online status, and push notification tokens.</p>
+          <p className="portal-subtitle">Manage profile details, theme appearance, mobile APK download, and push notifications.</p>
         </div>
       </div>
 
@@ -187,7 +208,31 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
           </div>
         </div>
 
-        {/* 3. Push Notification Token & Mobile Preferences */}
+        {/* 3. Mobile APK Downloading App Icon Card */}
+        <div className="glow-card p-6 md:col-span-2 border-sky-500/40">
+          <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
+            <Smartphone className="w-5 h-5 text-sky-400" />
+            Mobile Application & APK Download Package
+          </h3>
+
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <img src={appIconImg} alt="MRA SYNC APK Downloading App Icon" className="w-16 h-16 rounded-2xl border-2 border-sky-400 object-cover shadow-lg shadow-sky-500/20" />
+              <div>
+                <div className="font-bold text-white text-base">MRA SYNC Mobile Android Package (.APK)</div>
+                <div className="text-xs text-sky-400 font-mono">Official App Icon • Version 2.0 Build</div>
+                <div className="text-xs text-slate-400 mt-1">Install directly on Android smartphones or tablets for desktop & mobile push sync.</div>
+              </div>
+            </div>
+
+            <button onClick={handleDownloadAPK} className="btn-gold font-bold flex items-center gap-2 py-3 px-6">
+              <Download className="w-5 h-5" />
+              <span>Download Mobile APK</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 4. Push Notification Token & Mobile Preferences */}
         <div className="glow-card p-6 md:col-span-2">
           <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
             <BellRing className="w-5 h-5 text-sky-400" />
@@ -216,7 +261,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
           </div>
         </div>
 
-        {/* 4. Session & Data Management */}
+        {/* 5. Session & Data Management */}
         <div className="glow-card p-6 md:col-span-2">
           <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
             <ShieldCheck className="w-5 h-5 text-emerald-400" />
