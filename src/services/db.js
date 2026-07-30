@@ -1,5 +1,4 @@
 // Local Database Storage Service for MRA SYNC Portal
-// Pure Browser-based Storage Engine for MRA SYNC
 
 const STORAGE_KEYS = {
   USERS: 'mra_db_users',
@@ -10,8 +9,8 @@ const STORAGE_KEYS = {
   SESSION: 'mra_db_active_session'
 };
 
-// Initial Seed Users
-const DEFAULT_USERS = [
+// Initial Seed Users (Standardized)
+export const DEFAULT_USERS = [
   {
     id: 'CEO001',
     name: 'Alexander Vance',
@@ -232,7 +231,7 @@ const DEFAULT_WORK_LOGS = [
   }
 ];
 
-// Initial Seed Meeting Logs for Project Coordinator & TLs
+// Initial Seed Meeting Logs
 const DEFAULT_MEETINGS = [
   {
     id: 'MTG-301',
@@ -261,9 +260,30 @@ const DEFAULT_MEETINGS = [
 ];
 
 export const initDatabase = () => {
-  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+  const usersJson = localStorage.getItem(STORAGE_KEYS.USERS);
+  if (!usersJson) {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
+  } else {
+    // Sync default users if missing key accounts
+    try {
+      const existing = JSON.parse(usersJson);
+      let updated = [...existing];
+      let changed = false;
+      DEFAULT_USERS.forEach(defU => {
+        const found = updated.find(u => u.id === defU.id || u.email.toLowerCase() === defU.email.toLowerCase());
+        if (!found) {
+          updated.push(defU);
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
+      }
+    } catch (e) {
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
+    }
   }
+
   if (!localStorage.getItem(STORAGE_KEYS.LEAVES)) {
     localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(DEFAULT_LEAVES));
   }

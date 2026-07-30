@@ -107,9 +107,9 @@
 .theme-light input[type="password"],
 .theme-light input[type="number"],
 .theme-light select {
-  background: #FFFFFF;
-  border-color: #CBD5E1;
-  color: #0F172A;
+  background: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
 }
 
 .theme-light select option {
@@ -485,7 +485,7 @@ body {
   box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
 }
 
-/* Auth Page */
+/* Auth Page Layout & Input Styling Fix */
 .auth-page-container {
   min-height: 100vh;
   display: flex;
@@ -581,7 +581,11 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.form-group { margin-bottom: 16px; }
+.form-group {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
 .form-group label {
   display: block;
   font-size: 0.78rem;
@@ -592,8 +596,82 @@ body {
   letter-spacing: 0.5px;
 }
 
-.input-with-icon { position: relative; display: flex; align-items: center; }
-.input-icon { position: absolute; left: 12px; width: 18px; height: 18px; color: #64748B; }
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--gold-primary);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Explicit High Contrast Full Width Inputs Fix */
+.input-with-icon input,
+.input-with-icon select,
+.auth-input,
+textarea,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select {
+  width: 100% !important;
+  background: #0E131F !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.35) !important;
+  border-radius: 10px !important;
+  padding: 12px 14px 12px 42px !important;
+  color: #FFFFFF !important;
+  font-size: 0.9rem !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+}
+
+.theme-light .input-with-icon input,
+.theme-light .input-with-icon select,
+.theme-light .auth-input,
+.theme-light textarea,
+.theme-light input[type="text"],
+.theme-light input[type="email"],
+.theme-light input[type="password"],
+.theme-light input[type="number"],
+.theme-light select {
+  background: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+
+select option {
+  background-color: #0F141E !important;
+  color: #FFFFFF !important;
+}
+
+.theme-light select option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+textarea, input[type="text"]:not(.input-with-icon input), input[type="number"]:not(.input-with-icon input) {
+  padding-left: 14px !important;
+}
+
+.input-with-icon input:focus,
+.input-with-icon select:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--gold-primary) !important;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.3) !important;
+}
 
 .btn-gold {
   background: linear-gradient(135deg, #E6C247 0%, #D4AF37 50%, #997800 100%);

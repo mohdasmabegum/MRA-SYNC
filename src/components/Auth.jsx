@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import logoImg from '../assets/logo.jpg';
-import { getUsers, registerUser } from '../services/db';
+import { getUsers, registerUser, DEFAULT_USERS } from '../services/db';
 import { useToast } from '../context/ToastContext';
-import { LogIn, UserPlus, ShieldCheck, Lock, Mail, User, Building, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { LogIn, UserPlus, ShieldCheck, Lock, Mail, User, Building, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export const Auth = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -35,18 +35,28 @@ export const Auth = ({ onLoginSuccess }) => {
     { value: 'EMPLOYEE', label: 'Employee (Personal Work Log & Task Portal)' }
   ];
 
-  const handleQuickDemoLogin = (email) => {
+  const handleQuickDemoLogin = (targetEmail, targetRole) => {
     const users = getUsers();
-    const targetUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (targetUser) {
-      showToast(`Logged in as ${targetUser.name} (${targetUser.role})`, 'login', 'Authentication Successful');
+    // Match by email, or by role, or fallback to DEFAULT_USERS
+    let user = users.find(u => u.email.toLowerCase() === targetEmail.toLowerCase());
+    if (!user && targetRole) {
+      user = users.find(u => u.role === targetRole);
+    }
+    if (!user) {
+      user = DEFAULT_USERS.find(u => u.email.toLowerCase() === targetEmail.toLowerCase() || u.role === targetRole);
+    }
+
+    if (user) {
+      showToast(`Logged in as ${user.name} (${user.role})`, 'login', 'Authentication Successful');
       showModalPopup({
         title: 'Authentication Successful',
-        message: `Welcome back, ${targetUser.name}! You are currently logged in under [${targetUser.role}] role privileges.`,
+        message: `Welcome back, ${user.name}! You are currently logged in under [${user.role}] role privileges.`,
         iconType: 'login',
         confirmText: 'Enter MRA SYNC Portal'
       });
-      onLoginSuccess(targetUser);
+      onLoginSuccess(user);
+    } else {
+      showToast('Demo user account initializing...', 'warning');
     }
   };
 
@@ -58,7 +68,7 @@ export const Auth = ({ onLoginSuccess }) => {
       const users = getUsers();
       const user = users.find(u => u.email.toLowerCase() === formData.email.toLowerCase() && u.password === formData.password);
       if (!user) {
-        setErrorMsg('Invalid email or password. Select a demo role below.');
+        setErrorMsg('Invalid email or password. Use 1-Click Demo accounts below.');
         return;
       }
       showToast(`Welcome back ${user.name}!`, 'login', 'Login Successful');
@@ -138,7 +148,7 @@ export const Auth = ({ onLoginSuccess }) => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="auth-form">
+            <form onSubmit={handleSubmit} className="auth-form space-y-4">
               {!isLogin && (
                 <>
                   <div className="form-group">
@@ -151,6 +161,7 @@ export const Auth = ({ onLoginSuccess }) => {
                         value={formData.id}
                         onChange={e => setFormData({ ...formData, id: e.target.value })}
                         required
+                        className="auth-input"
                       />
                     </div>
                   </div>
@@ -165,6 +176,7 @@ export const Auth = ({ onLoginSuccess }) => {
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                         required
+                        className="auth-input"
                       />
                     </div>
                   </div>
@@ -181,6 +193,7 @@ export const Auth = ({ onLoginSuccess }) => {
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                     required
+                    className="auth-input"
                   />
                 </div>
               </div>
@@ -195,6 +208,7 @@ export const Auth = ({ onLoginSuccess }) => {
                     value={formData.password}
                     onChange={e => setFormData({ ...formData, password: e.target.value })}
                     required
+                    className="auth-input"
                   />
                 </div>
               </div>
@@ -208,6 +222,7 @@ export const Auth = ({ onLoginSuccess }) => {
                       <select
                         value={formData.dept}
                         onChange={e => setFormData({ ...formData, dept: e.target.value })}
+                        className="auth-input"
                       >
                         {DEPARTMENTS.map(d => (
                           <option key={d} value={d}>{d}</option>
@@ -223,6 +238,7 @@ export const Auth = ({ onLoginSuccess }) => {
                       <select
                         value={formData.role}
                         onChange={e => setFormData({ ...formData, role: e.target.value })}
+                        className="auth-input"
                       >
                         {ROLES.map(r => (
                           <option key={r.value} value={r.value}>{r.label}</option>
@@ -246,7 +262,7 @@ export const Auth = ({ onLoginSuccess }) => {
               </div>
               <div className="demo-grid">
                 <button
-                  onClick={() => handleQuickDemoLogin('ceo@mrasync.com')}
+                  onClick={() => handleQuickDemoLogin('ceo@mrasync.com', 'CEO/FOUNDER/DIRECTOR')}
                   className="demo-btn demo-ceo"
                 >
                   <span className="demo-role-badge">CEO / DIRECTOR</span>
@@ -254,7 +270,7 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('pc@mrasync.com')}
+                  onClick={() => handleQuickDemoLogin('pc@mrasync.com', 'PROJECT_COORDINATOR')}
                   className="demo-btn demo-pc"
                 >
                   <span className="demo-role-badge">PROJECT COORD</span>
@@ -262,7 +278,7 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('tl@mrasync.com')}
+                  onClick={() => handleQuickDemoLogin('tl@mrasync.com', 'TL')}
                   className="demo-btn demo-tl"
                 >
                   <span className="demo-role-badge">TEAM LEAD (TL)</span>
@@ -270,7 +286,7 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('subtl@mrasync.com')}
+                  onClick={() => handleQuickDemoLogin('subtl@mrasync.com', 'SUB_TL')}
                   className="demo-btn demo-subtl"
                 >
                   <span className="demo-role-badge">SUB-TL</span>
@@ -278,7 +294,7 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('hr@mrasync.com')}
+                  onClick={() => handleQuickDemoLogin('hr@mrasync.com', 'HR')}
                   className="demo-btn demo-hr"
                 >
                   <span className="demo-role-badge">HR MANAGER</span>
@@ -286,7 +302,7 @@ export const Auth = ({ onLoginSuccess }) => {
                 </button>
 
                 <button
-                  onClick={() => handleQuickDemoLogin('john@mrasync.com')}
+                  onClick={() => handleQuickDemoLogin('john@mrasync.com', 'EMPLOYEE')}
                   className="demo-btn demo-emp"
                 >
                   <span className="demo-role-badge">EMPLOYEE</span>
