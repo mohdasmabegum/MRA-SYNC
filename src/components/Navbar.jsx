@@ -12,10 +12,13 @@ import {
   LogOut,
   Bell,
   Building,
-  ShieldCheck
+  ShieldCheck,
+  Settings as SettingsIcon,
+  Sun,
+  Moon
 } from 'lucide-react';
 
-export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setSelectedDept, onLogout }) => {
+export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setSelectedDept, theme, setTheme, onLogout }) => {
   const { showToast, showModalPopup } = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -63,6 +66,13 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
     setActiveTab(tabId);
   };
 
+  const handleToggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+    localStorage.setItem('mra_app_theme', nextTheme);
+    showToast(`Theme changed to ${nextTheme === 'light' ? 'Professional Light' : 'Luxury Dark'}`, 'info');
+  };
+
   const handleLogoutClick = () => {
     showModalPopup({
       title: 'Confirm Logout',
@@ -94,6 +104,15 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
         {/* Global Controls & CEO Shortcut */}
         <div className="nav-right-controls">
+          {/* Theme Quick Switcher Toggle Button */}
+          <button
+            onClick={handleToggleTheme}
+            className="nav-icon-btn"
+            title={`Switch to ${theme === 'light' ? 'Luxury Dark' : 'Professional Light'} Theme`}
+          >
+            {theme === 'light' ? <Moon className="w-5 h-5 text-amber-600" /> : <Sun className="w-5 h-5 text-amber-400" />}
+          </button>
+
           {/* Department Selector */}
           <div className="dept-selector-wrapper">
             <Building className="w-4 h-4 text-amber-400" />
@@ -129,7 +148,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
           </div>
 
           {/* User Profile Card */}
-          <div className="user-profile-badge">
+          <div className="user-profile-badge" onClick={() => handleTabChange('settings', 'Portal Settings')} style={{ cursor: 'pointer' }}>
             <img src={activeUser?.avatar} alt={activeUser?.name} className="user-avatar" />
             <div className="user-info-text">
               <span className="user-name">{activeUser?.name}</span>
@@ -191,11 +210,20 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             <FileText className="w-4 h-4" />
             <span>Personal Work Log</span>
           </button>
+
+          {/* Settings Page */}
+          <button
+            onClick={() => handleTabChange('settings', 'Portal Settings')}
+            className={`nav-link ${activeTab === 'settings' ? 'active' : ''}`}
+          >
+            <SettingsIcon className="w-4 h-4" />
+            <span>Settings</span>
+          </button>
         </div>
 
         <div className="nav-status-indicator">
           <ShieldCheck className="w-4 h-4 text-emerald-400 inline mr-1" />
-          <span>MRA SYNC Active</span>
+          <span>MRA SYNC Active ({theme.toUpperCase()})</span>
         </div>
       </nav>
     </header>

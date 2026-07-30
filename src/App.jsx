@@ -9,6 +9,7 @@ import { InventoryPortal } from './components/InventoryPortal';
 import { WorkTransferPortal } from './components/WorkTransferPortal';
 import { EmployeeWorkLog } from './components/EmployeeWorkLog';
 import { CEODatabaseConsole } from './components/CEODatabaseConsole';
+import { Settings } from './components/Settings';
 import { initDatabase } from './services/db';
 
 export function AppContent() {
@@ -16,6 +17,7 @@ export function AppContent() {
   const [activeUser, setActiveUser] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedDept, setSelectedDept] = useState('ALL DEPARTMENTS');
+  const [theme, setTheme] = useState(() => localStorage.getItem('mra_app_theme') || 'dark');
 
   useEffect(() => {
     initDatabase();
@@ -49,13 +51,15 @@ export function AppContent() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${theme === 'light' ? 'theme-light' : 'theme-dark'}`}>
       <Navbar
         activeUser={activeUser}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         selectedDept={selectedDept}
         setSelectedDept={setSelectedDept}
+        theme={theme}
+        setTheme={setTheme}
         onLogout={handleLogout}
       />
 
@@ -89,6 +93,15 @@ export function AppContent() {
 
         {activeTab === 'personal_log' && (
           <EmployeeWorkLog activeUser={activeUser} />
+        )}
+
+        {activeTab === 'settings' && (
+          <Settings
+            activeUser={activeUser}
+            theme={theme}
+            setTheme={setTheme}
+            onLogout={handleLogout}
+          />
         )}
 
         {activeTab === 'ceo_db' && (
