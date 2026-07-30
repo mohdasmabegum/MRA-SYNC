@@ -191,35 +191,36 @@ html, body {
   color: #64748B !important;
 }
 
-/* Universal Back Button */
-.btn-back {
+/* Universal Top Left Symbol Back Button */
+.nav-back-symbol-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  color: var(--text-main);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1.5px solid rgba(212, 175, 55, 0.35);
+  color: var(--gold-light);
   padding: 6px 14px;
   border-radius: var(--radius-md);
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: 12px;
+  align-self: flex-start;
+  margin-bottom: 6px;
 }
 
-.theme-light .btn-back {
+.theme-light .nav-back-symbol-btn {
   background: #FFFFFF;
   border-color: #CBD5E1;
   color: #0F172A;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
-.btn-back:hover {
+.nav-back-symbol-btn:hover {
   background: var(--gold-primary);
   color: #000000;
   border-color: var(--gold-primary);
-  transform: translateX(-2px);
+  transform: translateX(-3px);
 }
 
 /* Meeting Scheduled Alerts Modal Redesign */
@@ -1112,18 +1113,6 @@ select:focus {
 .hero-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; }
 .hero-subtitle { font-size: 0.88rem; color: var(--text-muted); max-width: 650px; }
 
-.top-performer-card {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(0,0,0,0.4));
-  border: 1px solid rgba(212, 175, 55, 0.4);
-  padding: 16px 20px;
-  border-radius: var(--radius-md);
-  text-align: right;
-}
-
-.top-title { font-size: 0.72rem; color: var(--gold-light); font-weight: 700; text-transform: uppercase; }
-.top-name { font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
-.top-stats { font-size: 0.78rem; color: var(--text-muted); }
-
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1305,7 +1294,6 @@ select:focus {
 .toast-warning { border-left: 4px solid #F59E0B; }
 .toast-login { border-left: 4px solid var(--gold-primary); }
 .toast-logout { border-left: 4px solid #94A3B8; }
-.toast-redirect { border-left: 4px solid #38BDF8; }
 
 .toast-content { flex: 1; }
 .toast-title { font-size: 0.8rem; font-weight: 700; color: var(--text-main); }

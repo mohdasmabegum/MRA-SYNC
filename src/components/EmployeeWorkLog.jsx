@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getWorkLogs, getLeaves, getMaterials } from '../services/db';
 import { FileText, ArrowRightLeft, CalendarCheck, Boxes, User, ArrowLeft } from 'lucide-react';
 
-export const EmployeeWorkLog = ({ activeUser }) => {
+export const EmployeeWorkLog = ({ activeUser, onBackToDashboard }) => {
   const [workLogs, setWorkLogs] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [materials, setMaterials] = useState([]);
@@ -18,7 +18,6 @@ export const EmployeeWorkLog = ({ activeUser }) => {
     const allLeaves = getLeaves();
     const allMaterials = getMaterials();
 
-    // STRICT PERSONAL LOG FILTERING (Account Owner ONLY)
     setWorkLogs(allWork.filter(w => w.receiverEmpId === activeUser?.id || w.senderEmpId === activeUser?.id));
     setLeaves(allLeaves.filter(l => l.empId === activeUser?.id));
     setMaterials(allMaterials.filter(m => m.empId === activeUser?.id));
@@ -26,10 +25,10 @@ export const EmployeeWorkLog = ({ activeUser }) => {
 
   return (
     <div className="portal-page-container">
-      {/* Universal Back Button */}
-      <button onClick={() => window.history.back()} className="btn-back">
+      {/* Top Left Symbol Back Button */}
+      <button onClick={onBackToDashboard} className="nav-back-symbol-btn">
         <ArrowLeft className="w-4 h-4" />
-        <span>Back</span>
+        <span>Return to Dashboard</span>
       </button>
 
       {/* Header Bar */}

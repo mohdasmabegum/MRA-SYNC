@@ -10,13 +10,14 @@ import { WorkTransferPortal } from './components/WorkTransferPortal';
 import { EmployeeWorkLog } from './components/EmployeeWorkLog';
 import { CEODatabaseConsole } from './components/CEODatabaseConsole';
 import { Settings } from './components/Settings';
+import { TeamChatPortal } from './components/TeamChatPortal';
 import { initDatabase } from './services/db';
 
 export function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [activeUser, setActiveUser] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedDept, setSelectedDept] = useState('ALL DEPARTMENTS');
+  const [selectedDept, setSelectedDept] = useState('Hardware & Embedded Systems');
   const [theme, setTheme] = useState(() => localStorage.getItem('mra_app_theme') || 'dark');
 
   useEffect(() => {
@@ -24,7 +25,9 @@ export function AppContent() {
     const savedUser = localStorage.getItem('mra_db_active_session');
     if (savedUser) {
       try {
-        setActiveUser(JSON.parse(savedUser));
+        const parsed = JSON.parse(savedUser);
+        setActiveUser(parsed);
+        setSelectedDept(parsed.dept || 'Hardware & Embedded Systems');
       } catch (e) {
         localStorage.removeItem('mra_db_active_session');
       }
@@ -33,6 +36,7 @@ export function AppContent() {
 
   const handleLoginSuccess = (user) => {
     setActiveUser(user);
+    setSelectedDept(user.dept || 'Hardware & Embedded Systems');
     localStorage.setItem('mra_db_active_session', JSON.stringify(user));
     setActiveTab('dashboard');
   };
@@ -40,6 +44,10 @@ export function AppContent() {
   const handleLogout = () => {
     setActiveUser(null);
     localStorage.removeItem('mra_db_active_session');
+  };
+
+  const handleBackToDashboard = () => {
+    setActiveTab('dashboard');
   };
 
   if (showSplash) {
@@ -74,13 +82,17 @@ export function AppContent() {
         )}
 
         {activeTab === 'leaves' && (
-          <LeavePortal activeUser={activeUser} />
+          <LeavePortal
+            activeUser={activeUser}
+            onBackToDashboard={handleBackToDashboard}
+          />
         )}
 
         {activeTab === 'inventory' && (
           <InventoryPortal
             activeUser={activeUser}
             selectedDept={selectedDept}
+            onBackToDashboard={handleBackToDashboard}
           />
         )}
 
@@ -88,11 +100,22 @@ export function AppContent() {
           <WorkTransferPortal
             activeUser={activeUser}
             onNavigateToInventory={() => setActiveTab('inventory')}
+            onBackToDashboard={handleBackToDashboard}
           />
         )}
 
         {activeTab === 'personal_log' && (
-          <EmployeeWorkLog activeUser={activeUser} />
+          <EmployeeWorkLog
+            activeUser={activeUser}
+            onBackToDashboard={handleBackToDashboard}
+          />
+        )}
+
+        {activeTab === 'chat' && (
+          <TeamChatPortal
+            activeUser={activeUser}
+            onBackToDashboard={handleBackToDashboard}
+          />
         )}
 
         {activeTab === 'settings' && (
@@ -101,11 +124,15 @@ export function AppContent() {
             theme={theme}
             setTheme={setTheme}
             onLogout={handleLogout}
+            onBackToDashboard={handleBackToDashboard}
           />
         )}
 
         {activeTab === 'ceo_db' && (
-          <CEODatabaseConsole activeUser={activeUser} />
+          <CEODatabaseConsole
+            activeUser={activeUser}
+            onBackToDashboard={handleBackToDashboard}
+          />
         )}
       </main>
 

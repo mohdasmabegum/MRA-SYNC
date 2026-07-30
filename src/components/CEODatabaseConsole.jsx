@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getUsers, getLeaves, getMaterials, getWorkLogs, getMeetings, deleteRecordFromSheet, exportDatabaseJSON, resetDatabaseToDefaults } from '../services/db';
+import { getUsers, getLeaves, getMaterials, getWorkLogs, getMeetings, deleteRecordFromSheet, exportDatabaseJSON, exportDatabaseExcelCSV, resetDatabaseToDefaults } from '../services/db';
 import { useToast } from '../context/ToastContext';
-import { Database, Download, RefreshCw, Trash2, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Database, Download, RefreshCw, Trash2, ShieldAlert, ArrowLeft, FileSpreadsheet } from 'lucide-react';
 
-export const CEODatabaseConsole = ({ activeUser }) => {
+export const CEODatabaseConsole = ({ activeUser, onBackToDashboard }) => {
   const { showToast, showModalPopup } = useToast();
   const [activeSheet, setActiveSheet] = useState('users');
   const [dbData, setDbData] = useState({
@@ -63,6 +63,11 @@ export const CEODatabaseConsole = ({ activeUser }) => {
   if (!isCEO) {
     return (
       <div className="portal-page-container">
+        <button onClick={onBackToDashboard} className="nav-back-symbol-btn">
+          <ArrowLeft className="w-4 h-4" />
+          <span>Return to Dashboard</span>
+        </button>
+
         <div className="alert-card alert-warning text-center p-8">
           <ShieldAlert className="w-12 h-12 text-rose-400 mx-auto mb-3" />
           <h3 className="text-lg font-bold text-white mb-2">ACCESS RESTRICTED: CEO / DIRECTOR ONLY</h3>
@@ -76,10 +81,10 @@ export const CEODatabaseConsole = ({ activeUser }) => {
 
   return (
     <div className="portal-page-container">
-      {/* Universal Back Button */}
-      <button onClick={() => window.history.back()} className="btn-back">
+      {/* Top Left Symbol Back Button */}
+      <button onClick={onBackToDashboard} className="nav-back-symbol-btn">
         <ArrowLeft className="w-4 h-4" />
-        <span>Back</span>
+        <span>Return to Dashboard</span>
       </button>
 
       {/* Header Bar */}
@@ -89,12 +94,15 @@ export const CEODatabaseConsole = ({ activeUser }) => {
             <Database className="w-6 h-6 text-amber-400 animate-pulse" />
             CEO Raw Local Database Sheets Manager
           </h2>
-          <p className="portal-subtitle">Direct client-side database management console. Inspect, export, or manage raw JSON sheets.</p>
+          <p className="portal-subtitle">Direct client-side database management console. Inspect, export Excel logs, or manage raw JSON sheets.</p>
         </div>
 
         <div className="flex gap-3">
-          <button onClick={exportDatabaseJSON} className="btn-gold">
-            <Download className="w-4 h-4 mr-1" /> Export JSON
+          <button onClick={exportDatabaseExcelCSV} className="btn-gold font-bold">
+            <FileSpreadsheet className="w-4 h-4 mr-1" /> Export Excel Logs (.CSV)
+          </button>
+          <button onClick={exportDatabaseJSON} className="btn-secondary">
+            <Download className="w-4 h-4 mr-1" /> JSON
           </button>
           <button onClick={handleResetDatabase} className="btn-secondary text-rose-400 border-rose-500/30">
             <RefreshCw className="w-4 h-4 mr-1" /> Reset DB

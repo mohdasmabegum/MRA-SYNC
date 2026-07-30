@@ -19,8 +19,7 @@ import {
   ArrowLeft,
   Link,
   Check,
-  Layers,
-  FileText
+  Home
 } from 'lucide-react';
 
 export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigate }) => {
@@ -34,13 +33,13 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
   const [selectedEmpModal, setSelectedEmpModal] = useState(null);
   const [selectedMeetingModal, setSelectedMeetingModal] = useState(null);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
-  const [activeTabSubView, setActiveTabSubView] = useState('roster'); // 'roster' | 'on_leave'
+  const [activeTabSubView, setActiveTabSubView] = useState('roster');
 
   const [meetingFormData, setMeetingFormData] = useState({
     title: '',
     organizer: activeUser?.name || '',
     organizerId: activeUser?.id || '',
-    targetDept: selectedDept !== 'ALL DEPARTMENTS' ? selectedDept : (activeUser?.dept || 'Hardware & Embedded Systems'),
+    targetDept: selectedDept || (activeUser?.dept || 'Hardware & Embedded Systems'),
     date: new Date().toISOString().split('T')[0],
     time: '10:00 AM',
     agenda: '',
@@ -50,8 +49,11 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
   const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
   const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
+  const isHR = activeUser?.role === 'HR';
   const isTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
   const isNormalEmp = activeUser?.role === 'EMPLOYEE';
+
+  const isViewingOtherDept = selectedDept && selectedDept !== activeUser?.dept;
 
   useEffect(() => {
     fetchData();
@@ -59,7 +61,6 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
     return () => window.removeEventListener('mra_db_updated', fetchData);
   }, []);
 
-  // Popup Clean Redesigned Meeting Alert on initial load for CEO, PC, TL, Sub-TL
   useEffect(() => {
     if ((isCEO || isPC || isTL) && meetingsList.length > 0) {
       const popupShown = sessionStorage.getItem(`mra_mtg_popup_shown_${activeUser.id}`);
@@ -105,41 +106,29 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
   };
 
   const filterByDept = (dept) => {
-    if (!selectedDept || selectedDept === 'ALL DEPARTMENTS') return true;
+    if (!selectedDept) return true;
     return dept === selectedDept;
   };
 
-  const isSpecificDeptSelected = selectedDept && selectedDept !== 'ALL DEPARTMENTS';
-
-  // Role-Based Employee Roster Scoping:
-  // - PC: By default on main dashboard, show ONLY Project Management team employees!
-  // - CEO: Show all or selected dept
-  // - TL / Sub-TL: Show own department team members only
-  // - Normal Employee: Cannot view roster
   const getVisibleUsers = () => {
     if (isNormalEmp) return [];
     if (isTL) return usersList.filter(u => u.dept === activeUser?.dept);
-    if (isPC && !isSpecificDeptSelected) return usersList.filter(u => u.dept === 'Project Management');
     return usersList.filter(u => filterByDept(u.dept));
   };
 
   const visibleUsers = getVisibleUsers();
 
-  // Filters
   const filteredLeaves = leavesList.filter(l => isNormalEmp ? l.empId === activeUser.id : filterByDept(l.dept));
   const filteredWorkLogs = workLogsList.filter(w => isNormalEmp ? (w.receiverEmpId === activeUser.id || w.senderEmpId === activeUser.id) : (filterByDept(w.fromDept) || filterByDept(w.toDept)));
   const filteredMeetings = meetingsList.filter(m => isNormalEmp ? m.targetDept === activeUser.dept : filterByDept(m.targetDept));
 
-  // Approved On-Leave Employees List for "Today On Leave" tab
   const todayOnLeaveList = leavesList.filter(l => l.status === 'Approved' && filterByDept(l.dept));
 
-  // Compute Employee Detailed Work Stats
   const getEmployeeDetailedStats = (empId) => {
     const activeTasks = workLogsList.filter(w => w.receiverEmpId === empId && w.status === 'Pending Acceptance');
     const acceptedTasks = workLogsList.filter(w => w.receiverEmpId === empId && w.status.includes('Accepted'));
     const completedTasks = workLogsList.filter(w => w.receiverEmpId === empId && w.status.includes('Completed'));
 
-    // Past 1-Week Completed Tasks
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -179,7 +168,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       title: '',
       organizer: activeUser?.name || '',
       organizerId: activeUser?.id || '',
-      targetDept: selectedDept !== 'ALL DEPARTMENTS' ? selectedDept : (activeUser?.dept || 'Hardware & Embedded Systems'),
+      targetDept: selectedDept || (activeUser?.dept || 'Hardware & Embedded Systems'),
       date: new Date().toISOString().split('T')[0],
       time: '10:00 AM',
       agenda: '',
@@ -190,11 +179,11 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
   return (
     <div className="portal-page-container">
-      {/* Universal Back Button */}
-      {isSpecificDeptSelected && (
-        <button onClick={() => setSelectedDept('ALL DEPARTMENTS')} className="btn-back">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Main Executive Overview</span>
+      {/* Return to Primary Home Dashboard Button (When viewing another department) */}
+      {isViewingOtherDept && (
+        <button onClick={() => setSelectedDept(activeUser?.dept)} className="nav-back-symbol-btn">
+          <Home className="w-4 h-4 text-amber-400" />
+          <span>← Return to My Home Dashboard ({activeUser?.dept})</span>
         </button>
       )}
 
@@ -209,15 +198,15 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             Welcome back, <span className="text-gradient-gold">{activeUser?.name}</span>
           </h2>
           <p className="hero-subtitle">
-            {isPC && 'Project Coordinator Overview: Project Management team members & personal tasks visible.'}
-            {isCEO && 'CEO Executive Control: Departmental leaves, employees, and scheduled meetings overview.'}
-            {isTL && `Team Lead Dashboard for ${activeUser?.dept}: Team member tracking and leave applications.`}
+            {isPC && 'Project Coordinator Overview: Personal logs and department team view active.'}
+            {isCEO && 'CEO Executive Control: Overview of leaves, employee roster, and scheduled meetings.'}
+            {isTL && `Team Lead Dashboard for ${activeUser?.dept}: Team tracking and leave applications.`}
             {isNormalEmp && 'Employee Console: View your personal work transfer tasks and leave applications.'}
           </p>
         </div>
       </div>
 
-      {/* KPI Metric Summary Cards (Material Inventory Removed for Executive CEO/PC Roles) */}
+      {/* KPI Metric Summary Cards */}
       <div className="metrics-grid">
         <div className="metric-card glow-card" onClick={() => onNavigate('leaves')}>
           <div className="metric-icon-box bg-gold-500/10 text-amber-400">
@@ -246,9 +235,9 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             <Users className="w-6 h-6" />
           </div>
           <div className="metric-info">
-            <span className="metric-label">{isPC && !isSpecificDeptSelected ? 'Project Management Team' : 'Department Members'}</span>
+            <span className="metric-label">Department Members</span>
             <span className="metric-value">{visibleUsers.length} Employees</span>
-            <span className="metric-sub">{selectedDept === 'ALL DEPARTMENTS' ? (isPC ? 'Project Mgmt' : 'All Depts') : selectedDept}</span>
+            <span className="metric-sub">{selectedDept}</span>
           </div>
         </div>
       </div>
@@ -402,7 +391,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-amber-400" />
               <h3 className="text-md font-bold text-white">
-                {isPC && !isSpecificDeptSelected ? 'Project Management Team Members' : `Department Employee Roster (${selectedDept})`}
+                Department Employee Roster ({selectedDept})
               </h3>
             </div>
 
@@ -460,7 +449,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             </div>
           )}
 
-          {/* Sub-view 2: Today On Leave List with Department Filter */}
+          {/* Sub-view 2: Today On Leave List */}
           {activeTabSubView === 'on_leave' && (
             <div className="space-y-3">
               <p className="text-xs text-slate-400 italic">Approved employees currently on leave for {selectedDept}:</p>
@@ -547,7 +536,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
         </div>
       )}
 
-      {/* DETAILED EMPLOYEE PROFILE DRAWER MODAL (REQUIREMENT 5.8) */}
+      {/* DETAILED EMPLOYEE PROFILE DRAWER MODAL */}
       {selectedEmpModal && (
         <div className="modal-backdrop">
           <div className="modal-content glow-card emp-detail-modal max-w-2xl">
@@ -568,7 +557,6 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
                 return (
                   <>
-                    {/* Performance Summary Metrics */}
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg">
                         <span className="text-lg font-bold text-amber-400 block">{stats.acceptedCount}</span>
@@ -584,7 +572,6 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                       </div>
                     </div>
 
-                    {/* SECTION 1: Current Working / Accepted Tasks */}
                     <div className="space-y-2">
                       <h4 className="font-bold text-amber-400 flex items-center gap-1">
                         <ArrowRightLeft className="w-4 h-4" /> SECTION 1: Current Working / Accepted Tasks ({stats.acceptedTasksList.length})
@@ -601,7 +588,6 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                       )}
                     </div>
 
-                    {/* SECTION 2: Completed Tasks */}
                     <div className="space-y-2">
                       <h4 className="font-bold text-emerald-400 flex items-center gap-1">
                         <Check className="w-4 h-4" /> SECTION 2: Completed Tasks ({stats.completedTasksList.length})
@@ -621,7 +607,6 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                       )}
                     </div>
 
-                    {/* SECTION 3: Upcoming / Pending Approved Leaves */}
                     <div className="space-y-2">
                       <h4 className="font-bold text-purple-400 flex items-center gap-1">
                         <CalendarCheck className="w-4 h-4" /> SECTION 3: Employee Leave Status & Upcoming Leaves

@@ -3,7 +3,7 @@ import { getMaterials, addMaterialRequest, updateMaterialStatus, getUsers } from
 import { useToast } from '../context/ToastContext';
 import { Boxes, PlusCircle, ShoppingCart, AlertTriangle, Layers, ArrowLeft, Check } from 'lucide-react';
 
-export const InventoryPortal = ({ activeUser, selectedDept }) => {
+export const InventoryPortal = ({ activeUser, selectedDept, onBackToDashboard }) => {
   const { showToast } = useToast();
   const [materials, setMaterials] = useState([]);
   const [usersList, setUsersList] = useState([]);
@@ -103,7 +103,6 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
     showToast(`Order placed for request ${id}.`, 'info');
   };
 
-  // Department-Wise Filtering
   const isDeptFiltered = selectedDept && selectedDept !== 'ALL DEPARTMENTS';
 
   const displayedMaterials = materials.filter(m => {
@@ -119,10 +118,10 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
 
   return (
     <div className="portal-page-container">
-      {/* Universal Back Button */}
-      <button onClick={() => window.history.back()} className="btn-back">
+      {/* Top Left Symbol Back Button */}
+      <button onClick={onBackToDashboard} className="nav-back-symbol-btn">
         <ArrowLeft className="w-4 h-4" />
-        <span>Back</span>
+        <span>Return to Dashboard</span>
       </button>
 
       {/* Header Bar */}
@@ -246,7 +245,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
       {/* TWO SECTIONS FOR TL / SUB-TL ACCOUNTS */}
       {(isTLOrSubTL || isCEO || isPC || isInventoryUser) ? (
         <div className="space-y-6">
-          {/* SECTION 1: Team Requisitions (Employee -> TL / Sub-TL) */}
+          {/* SECTION 1: Team Requisitions */}
           <div className="glow-card p-5 border-amber-500/30">
             <h3 className="text-md font-bold text-amber-400 mb-4 flex items-center gap-2">
               <Layers className="w-5 h-5 text-amber-400" />
@@ -312,7 +311,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
             </div>
           </div>
 
-          {/* SECTION 2: Requisitions to Inventory Team (TL / Sub-TL -> Inventory) */}
+          {/* SECTION 2: Requisitions to Inventory Team */}
           <div className="glow-card p-5 border-cyan-500/30">
             <h3 className="text-md font-bold text-cyan-400 mb-4 flex items-center gap-2">
               <Boxes className="w-5 h-5 text-cyan-400" />

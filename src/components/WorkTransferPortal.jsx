@@ -3,7 +3,7 @@ import { getUsers, getWorkLogs, addWorkLog, updateWorkLogStatus } from '../servi
 import { useToast } from '../context/ToastContext';
 import { ArrowRightLeft, PlusCircle, FileCheck, HardDrive, Boxes, ArrowLeft } from 'lucide-react';
 
-export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
+export const WorkTransferPortal = ({ activeUser, onNavigateToInventory, onBackToDashboard }) => {
   const { showToast, showModalPopup } = useToast();
   const [workLogs, setWorkLogs] = useState([]);
   const [usersList, setUsersList] = useState([]);
@@ -126,10 +126,10 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
 
   return (
     <div className="portal-page-container">
-      {/* Universal Back Button */}
-      <button onClick={() => window.history.back()} className="btn-back">
+      {/* Top Left Symbol Back Button */}
+      <button onClick={onBackToDashboard} className="nav-back-symbol-btn">
         <ArrowLeft className="w-4 h-4" />
-        <span>Back</span>
+        <span>Return to Dashboard</span>
       </button>
 
       {/* Header Bar */}

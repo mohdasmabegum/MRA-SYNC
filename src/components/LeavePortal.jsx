@@ -3,11 +3,11 @@ import { getLeaves, addLeaveRequest, updateLeaveStatus } from '../services/db';
 import { useToast } from '../context/ToastContext';
 import { CalendarCheck, PlusCircle, CheckCircle, XCircle, UserX, ArrowLeft, Users } from 'lucide-react';
 
-export const LeavePortal = ({ activeUser }) => {
+export const LeavePortal = ({ activeUser, onBackToDashboard }) => {
   const { showToast } = useToast();
   const [leaves, setLeaves] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [activeTabSubView, setActiveTabSubView] = useState('on_leave_first'); // 'on_leave_first' | 'my_leaves'
+  const [activeTabSubView, setActiveTabSubView] = useState('on_leave_first');
 
   const isHR = activeUser?.role === 'HR';
   const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
@@ -68,16 +68,15 @@ export const LeavePortal = ({ activeUser }) => {
     showToast(`Leave application ${id} REJECTED.`, 'warning');
   };
 
-  // Currently On Leave Members FIRST List (Requirement 5.6)
   const currentlyOnLeaveMembers = leaves.filter(l => l.status === 'Approved');
   const myPersonalLeaves = leaves.filter(l => l.empId === activeUser?.id);
 
   return (
     <div className="portal-page-container">
-      {/* Universal Back Button */}
-      <button onClick={() => window.history.back()} className="btn-back">
+      {/* Top Left Symbol Back Button */}
+      <button onClick={onBackToDashboard} className="nav-back-symbol-btn">
         <ArrowLeft className="w-4 h-4" />
-        <span>Back</span>
+        <span>Return to Dashboard</span>
       </button>
 
       {/* Header Bar */}

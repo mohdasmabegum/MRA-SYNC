@@ -17,30 +17,34 @@ import {
   Sun,
   Moon,
   Clock,
-  Video,
-  X
+  MessageSquare,
+  X,
+  ChevronRight
 } from 'lucide-react';
 
 export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setSelectedDept, theme, setTheme, onLogout }) => {
-  const { showToast, showModalPopup } = useToast();
+  const { showModalPopup } = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsList, setNotificationsList] = useState([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
   const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
+  const isHR = activeUser?.role === 'HR';
   const isTLOrSubTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
   const isNormalEmp = activeUser?.role === 'EMPLOYEE';
 
-  const DEPARTMENTS = isCEO || isPC ? [
-    'ALL DEPARTMENTS',
+  const canSwitchDepts = isCEO || isPC || isHR;
+  const canAccessChat = isCEO || isPC || activeUser?.dept === 'Project Management';
+
+  const ACTUAL_DEPARTMENTS = [
     'Executive Management',
     'Project Management',
     'Hardware & Embedded Systems',
     'Software & AI Systems',
     'Human Resources',
     'Inventory & Logistics'
-  ] : [activeUser?.dept || 'Hardware & Embedded Systems'];
+  ];
 
   useEffect(() => {
     const checkUpdates = () => {
@@ -55,56 +59,42 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
         pendingWork.forEach(w => {
           notifs.push({
             id: `wrk-${w.id}`,
-            title: 'New Work Task Assigned',
-            message: `"${w.projectName}" assigned by ${w.workAlloter}`,
-            time: w.createdDate,
+            title: 'Work Task Assigned',
+            message: `"${w.projectName}" from ${w.workAlloter}`,
+            targetTab: 'work_transfer',
             type: 'work'
           });
         });
       }
 
-      if (activeUser?.role === 'HR' || isCEO) {
+      if (isHR || isCEO) {
         const pendingLeaves = leaves.filter(l => l.status === 'Pending');
         pendingLeaves.forEach(l => {
           notifs.push({
             id: `lv-${l.id}`,
-            title: 'Leave Application Pending',
-            message: `${l.name} requested ${l.noOfDays} days (${l.leaveType})`,
-            time: l.appliedDate,
+            title: 'Leave Pending Approval',
+            message: `${l.name} requested ${l.noOfDays}d (${l.leaveType})`,
+            targetTab: 'leaves',
             type: 'leave'
           });
         });
       }
 
-      // 2. TIMED MEETING REMINDERS (1 Hour, 30 Min, 20 Min, 10 Min Reminders)
+      // 2. Timed Meeting Reminders
       meetings.forEach(mtg => {
         notifs.push({
           id: `mtg-1h-${mtg.id}`,
-          title: `⏰ 1 Hour Meeting Reminder: "${mtg.title}"`,
-          message: `Scheduled for ${mtg.date} @ ${mtg.time} (${mtg.targetDept})`,
-          time: 'Remind 60m before',
-          type: 'meeting_reminder'
+          title: `⏰ 1h Reminder: ${mtg.title}`,
+          message: `Scheduled ${mtg.date} @ ${mtg.time}`,
+          targetTab: 'dashboard',
+          type: 'meeting'
         });
         notifs.push({
           id: `mtg-30m-${mtg.id}`,
-          title: `⚡ 30 Minute Meeting Reminder: "${mtg.title}"`,
-          message: `Starting in 30 mins! Join link attached.`,
-          time: 'Remind 30m before',
-          type: 'meeting_reminder'
-        });
-        notifs.push({
-          id: `mtg-20m-${mtg.id}`,
-          title: `🚨 20 Minute Warning: "${mtg.title}"`,
-          message: `Starting in 20 mins with ${mtg.organizer}`,
-          time: 'Remind 20m before',
-          type: 'meeting_reminder'
-        });
-        notifs.push({
-          id: `mtg-10m-${mtg.id}`,
-          title: `🔔 10 Minute Final Call: "${mtg.title}"`,
-          message: `Starting in 10 mins @ ${mtg.time}`,
-          time: 'Remind 10m before',
-          type: 'meeting_reminder'
+          title: `⚡ 30m Reminder: ${mtg.title}`,
+          message: `Starting soon @ ${mtg.time}`,
+          targetTab: 'dashboard',
+          type: 'meeting'
         });
       });
 
@@ -117,17 +107,20 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
     return () => window.removeEventListener('mra_db_updated', checkUpdates);
   }, [activeUser]);
 
-  const handleTabChange = (tabId, tabName) => {
+  const handleTabChangeSilently = (tabId) => {
     if (tabId === activeTab) return;
-    showToast(`Navigating to ${tabName}...`, 'redirect', 'Internal Page Redirect');
     setActiveTab(tabId);
+  };
+
+  const handleNotifItemClick = (targetTab) => {
+    setShowNotifDropdown(false);
+    setActiveTab(targetTab);
   };
 
   const handleToggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
     localStorage.setItem('mra_app_theme', nextTheme);
-    showToast(`Theme changed to ${nextTheme === 'light' ? 'Professional Light' : 'Luxury Dark'}`, 'info');
   };
 
   const handleLogoutClick = () => {
@@ -138,7 +131,6 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
       confirmText: 'Yes, Logout',
       cancelText: 'Cancel',
       onConfirm: () => {
-        showToast('Logged out successfully.', 'logout', 'Session Closed');
         onLogout();
       }
     });
@@ -149,7 +141,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
       {/* Top Bar */}
       <div className="navbar-top">
         {/* Brand Logo */}
-        <div className="nav-brand" onClick={() => handleTabChange('dashboard', 'Overview Dashboard')}>
+        <div className="nav-brand" onClick={() => handleTabChangeSilently('dashboard')}>
           <img src={logoImg} alt="MRA SYNC Logo" className="nav-logo-img" />
           <div className="nav-brand-text">
             <h1 className="nav-title">
@@ -170,26 +162,28 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             {theme === 'light' ? <Moon className="w-5 h-5 text-amber-600" /> : <Sun className="w-5 h-5 text-amber-400" />}
           </button>
 
-          {/* Department Selector */}
-          <div className="dept-selector-wrapper">
-            <Building className="w-4 h-4 text-amber-400" />
-            <select
-              value={selectedDept}
-              onChange={e => setSelectedDept(e.target.value)}
-              className="dept-select-styled"
-            >
-              {DEPARTMENTS.map(dept => (
-                <option key={dept} value={dept} className="dept-option-styled">
-                  {dept}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Department Selector (VISIBLE ONLY FOR CEO, FOUNDER, DIRECTOR, PC, HR) */}
+          {canSwitchDepts && (
+            <div className="dept-selector-wrapper">
+              <Building className="w-4 h-4 text-amber-400" />
+              <select
+                value={selectedDept}
+                onChange={e => setSelectedDept(e.target.value)}
+                className="dept-select-styled"
+              >
+                {ACTUAL_DEPARTMENTS.map(dept => (
+                  <option key={dept} value={dept} className="dept-option-styled">
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* EXCLUSIVE CEO / DIRECTOR BACKEND DATABASE SHORTCUT BUTTON */}
           {isCEO && (
             <button
-              onClick={() => handleTabChange('ceo_db', 'CEO Raw Backend Database Console')}
+              onClick={() => handleTabChangeSilently('ceo_db')}
               className={`ceo-shortcut-btn ${activeTab === 'ceo_db' ? 'active' : ''}`}
               title="Exclusive Backend Database Access for CEO / Director"
             >
@@ -198,7 +192,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             </button>
           )}
 
-          {/* Notifications Bell Dropdown */}
+          {/* Redesigned Clickable Notifications Dropdown */}
           <div className="relative">
             <div
               onClick={() => setShowNotifDropdown(!showNotifDropdown)}
@@ -213,7 +207,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
               <div className="absolute right-0 mt-2 w-80 glow-card p-4 z-50 border border-cyan-500/40 shadow-2xl text-xs space-y-2">
                 <div className="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
                   <span className="font-bold text-white flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-amber-400" /> Meeting Reminders & Alerts ({notificationsList.length})
+                    <Clock className="w-4 h-4 text-amber-400" /> Notifications & Reminders ({notificationsList.length})
                   </span>
                   <button onClick={() => setShowNotifDropdown(false)} className="text-slate-400 hover:text-white">
                     <X className="w-4 h-4" />
@@ -222,13 +216,19 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {notificationsList.length === 0 ? (
-                    <p className="text-slate-500 italic text-center py-2">No active reminders.</p>
+                    <p className="text-slate-500 italic text-center py-2">No active notifications.</p>
                   ) : (
                     notificationsList.map(n => (
-                      <div key={n.id} className="bg-slate-900/80 p-2 rounded border border-slate-800 space-y-0.5">
-                        <div className="font-bold text-cyan-300">{n.title}</div>
-                        <div className="text-slate-300 text-[11px]">{n.message}</div>
-                        <div className="text-[10px] text-amber-400 font-mono">{n.time}</div>
+                      <div
+                        key={n.id}
+                        onClick={() => handleNotifItemClick(n.targetTab)}
+                        className="bg-slate-900/90 hover:bg-slate-800 p-2.5 rounded border border-slate-800 flex justify-between items-center cursor-pointer transition-all"
+                      >
+                        <div>
+                          <div className="font-bold text-cyan-300">{n.title}</div>
+                          <div className="text-slate-300 text-[11px]">{n.message}</div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-amber-400 shrink-0" />
                       </div>
                     ))
                   )}
@@ -238,7 +238,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
           </div>
 
           {/* User Profile Card */}
-          <div className="user-profile-badge" onClick={() => handleTabChange('settings', 'Portal Settings')} style={{ cursor: 'pointer' }}>
+          <div className="user-profile-badge" onClick={() => handleTabChangeSilently('settings')} style={{ cursor: 'pointer' }}>
             <img src={activeUser?.avatar} alt={activeUser?.name} className="user-avatar" />
             <div className="user-info-text">
               <span className="user-name">{activeUser?.name}</span>
@@ -258,7 +258,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
         <div className="nav-links-group">
           {/* Dashboard */}
           <button
-            onClick={() => handleTabChange('dashboard', 'Overview Dashboard')}
+            onClick={() => handleTabChangeSilently('dashboard')}
             className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
           >
             <LayoutDashboard className="w-4 h-4" />
@@ -267,7 +267,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
           {/* Leave Application Portal */}
           <button
-            onClick={() => handleTabChange('leaves', 'Leave Application Portal')}
+            onClick={() => handleTabChangeSilently('leaves')}
             className={`nav-link ${activeTab === 'leaves' ? 'active' : ''}`}
           >
             <CalendarCheck className="w-4 h-4" />
@@ -276,7 +276,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
           {/* Material Request & Inventory Workflow */}
           <button
-            onClick={() => handleTabChange('inventory', 'Material & Inventory Portal')}
+            onClick={() => handleTabChangeSilently('inventory')}
             className={`nav-link ${activeTab === 'inventory' ? 'active' : ''}`}
           >
             <Boxes className="w-4 h-4" />
@@ -285,7 +285,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
           {/* Transfer Track of Work */}
           <button
-            onClick={() => handleTabChange('work_transfer', 'Transfer Track of Work')}
+            onClick={() => handleTabChangeSilently('work_transfer')}
             className={`nav-link ${activeTab === 'work_transfer' ? 'active' : ''}`}
           >
             <ArrowRightLeft className="w-4 h-4" />
@@ -294,16 +294,27 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
           {/* Employee Work Log Base */}
           <button
-            onClick={() => handleTabChange('personal_log', 'Personal Work Logs')}
+            onClick={() => handleTabChangeSilently('personal_log')}
             className={`nav-link ${activeTab === 'personal_log' ? 'active' : ''}`}
           >
             <FileText className="w-4 h-4" />
             <span>Personal Work Log</span>
           </button>
 
+          {/* Team Chat (EXCLUSIVE TO PM TEAM & EXECUTIVES) */}
+          {canAccessChat && (
+            <button
+              onClick={() => handleTabChangeSilently('chat')}
+              className={`nav-link ${activeTab === 'chat' ? 'active' : ''}`}
+            >
+              <MessageSquare className="w-4 h-4 text-amber-400" />
+              <span>PM Team Chat</span>
+            </button>
+          )}
+
           {/* Settings Page */}
           <button
-            onClick={() => handleTabChange('settings', 'Portal Settings')}
+            onClick={() => handleTabChangeSilently('settings')}
             className={`nav-link ${activeTab === 'settings' ? 'active' : ''}`}
           >
             <SettingsIcon className="w-4 h-4" />

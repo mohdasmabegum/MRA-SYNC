@@ -6,10 +6,11 @@ const STORAGE_KEYS = {
   MATERIALS: 'mra_db_material_requests',
   WORK_LOGS: 'mra_db_work_transfer_logs',
   MEETINGS: 'mra_db_meeting_logs',
+  CHAT_MESSAGES: 'mra_db_chat_messages',
   SESSION: 'mra_db_active_session'
 };
 
-// Initial Seed Users (Standardized)
+// Initial Seed Users
 export const DEFAULT_USERS = [
   {
     id: 'CEO001',
@@ -146,30 +147,6 @@ const DEFAULT_MATERIALS = [
     noOfDaysToReceiveOrder: '7 Days',
     noOfDaysForProvidingMaterial: '8 Days (Est.)',
     updates: 'Item out of stock in warehouse. Order PO-9942 placed with vendor.'
-  },
-  {
-    id: 'MAT-802',
-    empName: 'Jim Halpert (Sub-TL)',
-    empId: 'STL001',
-    targetTLId: 'TL001',
-    targetTLName: 'Michael Scott',
-    deptName: 'Software & AI Systems',
-    materialType: 'High-speed Cat6 Ethernet Cabling & Testing Kit',
-    noOfUnits: '50 Meters',
-    requirementType: 'Quick',
-    forProject: 'Neural Network Cluster Lab setup',
-    availableAtMoment: 'Yes',
-    status: 'Provided / Handover',
-    inventoryHandledBy: 'Robert Drake (Inventory)',
-    requestDate: '2026-07-27 02:00 PM',
-    reachedDate: '2026-07-27 02:02 PM',
-    acceptedDate: '2026-07-27 02:15 PM',
-    providedDate: '2026-07-27 03:00 PM',
-    orderPlacedDate: 'N/A',
-    orderReceivedDate: 'N/A',
-    noOfDaysToReceiveOrder: '0 Days',
-    noOfDaysForProvidingMaterial: '1 Hour',
-    updates: 'Provided from local stock Bay 4.'
   }
 ];
 
@@ -210,24 +187,6 @@ const DEFAULT_WORK_LOGS = [
     completedDate: 'Pending',
     status: 'Accepted / In Progress',
     rejectionReason: ''
-  },
-  {
-    id: 'WRK-1003',
-    workAlloter: 'Alexander Vance (CEO)',
-    senderEmpId: 'CEO001',
-    fromDept: 'Executive Management',
-    toDept: 'Project Management',
-    receiverEmpId: 'PC001',
-    receiverName: 'Sarah Connor',
-    projectName: 'Q3 Milestone Alignment & Hardware Delivery Review',
-    hardwareDocInfo: 'Q3 Roadmaps, departmental budget reports, and hardware delivery schedules.',
-    requirement: 'Emergency',
-    hardwareDocReceived: true,
-    createdDate: '2026-07-29 11:30 AM',
-    acceptedDate: '2026-07-29 11:45 AM',
-    completedDate: 'Pending',
-    status: 'Accepted / In Progress',
-    rejectionReason: ''
   }
 ];
 
@@ -244,18 +203,28 @@ const DEFAULT_MEETINGS = [
     time: '10:00 AM',
     agenda: 'Review Hardware & Embedded Systems material shortage and pending satellite node tasks.',
     status: 'Pending Meeting'
+  }
+];
+
+// Initial Seed Chat Messages for PM Team & Executives
+const DEFAULT_CHAT_MESSAGES = [
+  {
+    id: 'MSG-1',
+    senderId: 'CEO001',
+    senderName: 'Alexander Vance (CEO)',
+    senderRole: 'CEO/FOUNDER/DIRECTOR',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    text: 'Team, please review the Q3 Hardware & Software milestone deliverables for Project Apollo.',
+    timestamp: '10:15 AM'
   },
   {
-    id: 'MTG-302',
-    title: 'Software & AI Model Architecture Alignment',
-    organizer: 'Sarah Connor (PC)',
-    organizerId: 'PC001',
-    targetDept: 'Software & AI Systems',
-    participants: ['Jane Smith (EMP102)', 'Jim Halpert (SUB_TL)'],
-    date: '2026-08-01',
-    time: '02:30 PM',
-    agenda: 'Align neural network cluster requirements and work transfer dependencies.',
-    status: 'Pending Meeting'
+    id: 'MSG-2',
+    senderId: 'PC001',
+    senderName: 'Sarah Connor (PC)',
+    senderRole: 'PROJECT_COORDINATOR',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    text: 'Received. All work transfer requests for Hardware and Software teams have been allocated.',
+    timestamp: '10:18 AM'
   }
 ];
 
@@ -263,27 +232,7 @@ export const initDatabase = () => {
   const usersJson = localStorage.getItem(STORAGE_KEYS.USERS);
   if (!usersJson) {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-  } else {
-    // Sync default users if missing key accounts
-    try {
-      const existing = JSON.parse(usersJson);
-      let updated = [...existing];
-      let changed = false;
-      DEFAULT_USERS.forEach(defU => {
-        const found = updated.find(u => u.id === defU.id || u.email.toLowerCase() === defU.email.toLowerCase());
-        if (!found) {
-          updated.push(defU);
-          changed = true;
-        }
-      });
-      if (changed) {
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
-      }
-    } catch (e) {
-      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-    }
   }
-
   if (!localStorage.getItem(STORAGE_KEYS.LEAVES)) {
     localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(DEFAULT_LEAVES));
   }
@@ -295,6 +244,9 @@ export const initDatabase = () => {
   }
   if (!localStorage.getItem(STORAGE_KEYS.MEETINGS)) {
     localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(DEFAULT_MEETINGS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES)) {
+    localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(DEFAULT_CHAT_MESSAGES));
   }
 };
 
@@ -460,7 +412,75 @@ export const addMeetingLog = (meetingData) => {
   return newMtg;
 };
 
-// Raw Database Management (For CEO/Director)
+// Team Chat API
+export const getChatMessages = () => {
+  initDatabase();
+  return JSON.parse(localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES) || '[]');
+};
+
+export const sendChatMessage = (msgData) => {
+  const messages = getChatMessages();
+  const newMsg = {
+    id: `MSG-${Date.now()}`,
+    ...msgData,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+  messages.push(newMsg);
+  localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messages));
+  triggerStorageEvent(STORAGE_KEYS.CHAT_MESSAGES);
+  return newMsg;
+};
+
+// EXCEL / CSV DATA EXPORT SERVICE FOR CEO / FOUNDER / DIRECTOR ACCOUNTS
+export const exportDatabaseExcelCSV = () => {
+  const users = getUsers();
+  const leaves = getLeaves();
+  const materials = getMaterials();
+  const workLogs = getWorkLogs();
+  const meetings = getMeetings();
+
+  let csvContent = 'data:text/csv;charset=utf-8,';
+
+  // Section 1: Department & Employee Summary
+  csvContent += '=== MRA SYNC ENTERPRISE REPORT ===\n';
+  csvContent += 'Exported Date:,' + new Date().toLocaleString() + '\n\n';
+
+  csvContent += '--- EMPLOYEE ROSTER & DEPARTMENT BREAKDOWN ---\n';
+  csvContent += 'User ID,Full Name,Corporate Email,Role Designation,Department\n';
+  users.forEach(u => {
+    csvContent += `"${u.id}","${u.name}","${u.email}","${u.role}","${u.dept}"\n`;
+  });
+
+  // Section 2: Work Transfer Logs
+  csvContent += '\n--- WORK TRANSFER LOGS SHEET ---\n';
+  csvContent += 'Task ID,Project Name,Work Alloter,Sender Dept,Target Receiver,Receiver Dept,Priority,Status,Created Date,Completed Date\n';
+  workLogs.forEach(w => {
+    csvContent += `"${w.id}","${w.projectName}","${w.workAlloter}","${w.fromDept}","${w.receiverName}","${w.toDept}","${w.requirement}","${w.status}","${w.createdDate}","${w.completedDate}"\n`;
+  });
+
+  // Section 3: Leave Applications
+  csvContent += '\n--- LEAVE APPLICATIONS SHEET ---\n';
+  csvContent += 'Leave ID,Employee ID,Employee Name,Department,Leave Type,From-To Dates,No Of Days,Purpose,Status,Approved By\n';
+  leaves.forEach(l => {
+    csvContent += `"${l.id}","${l.empId}","${l.name}","${l.dept}","${l.leaveType}","${l.fromTo}","${l.noOfDays}","${l.purpose}","${l.status}","${l.approvedBy}"\n`;
+  });
+
+  // Section 4: Material Requisitions
+  csvContent += '\n--- MATERIAL & INVENTORY SHEET ---\n';
+  csvContent += 'Req ID,Requester,Department,Target TL,Material Type,Quantity,Project,Stock Available,Status,Updates\n';
+  materials.forEach(m => {
+    csvContent += `"${m.id}","${m.empName}","${m.deptName}","${m.targetTLName}","${m.materialType}","${m.noOfUnits}","${m.forProject}","${m.availableAtMoment}","${m.status}","${m.updates}"\n`;
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `MRA_SYNC_Enterprise_Backend_Logs_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 export const exportDatabaseJSON = () => {
   const data = {
     users: getUsers(),
@@ -484,11 +504,13 @@ export const resetDatabaseToDefaults = () => {
   localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(DEFAULT_MATERIALS));
   localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(DEFAULT_WORK_LOGS));
   localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(DEFAULT_MEETINGS));
+  localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(DEFAULT_CHAT_MESSAGES));
   triggerStorageEvent(STORAGE_KEYS.USERS);
   triggerStorageEvent(STORAGE_KEYS.LEAVES);
   triggerStorageEvent(STORAGE_KEYS.MATERIALS);
   triggerStorageEvent(STORAGE_KEYS.WORK_LOGS);
   triggerStorageEvent(STORAGE_KEYS.MEETINGS);
+  triggerStorageEvent(STORAGE_KEYS.CHAT_MESSAGES);
 };
 
 export const deleteRecordFromSheet = (sheetKey, recordId) => {
