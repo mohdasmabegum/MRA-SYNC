@@ -52,6 +52,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
   const isHR = activeUser?.role === 'HR';
   const isTL = activeUser?.role === 'TL' || activeUser?.role === 'SUB_TL';
   const isNormalEmp = activeUser?.role === 'EMPLOYEE';
+  const isPMTeam = activeUser?.dept === 'Project Management';
 
   const isViewingOtherDept = selectedDept && selectedDept !== activeUser?.dept;
 
@@ -62,7 +63,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
   }, []);
 
   useEffect(() => {
-    if ((isCEO || isPC || isTL) && meetingsList.length > 0) {
+    if ((isCEO || isPC || isTL || isPMTeam) && meetingsList.length > 0) {
       const popupShown = sessionStorage.getItem(`mra_mtg_popup_shown_${activeUser.id}`);
       if (!popupShown) {
         sessionStorage.setItem(`mra_mtg_popup_shown_${activeUser.id}`, 'true');
@@ -120,7 +121,18 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
   const filteredLeaves = leavesList.filter(l => isNormalEmp ? l.empId === activeUser.id : filterByDept(l.dept));
   const filteredWorkLogs = workLogsList.filter(w => isNormalEmp ? (w.receiverEmpId === activeUser.id || w.senderEmpId === activeUser.id) : (filterByDept(w.fromDept) || filterByDept(w.toDept)));
-  const filteredMeetings = meetingsList.filter(m => isNormalEmp ? m.targetDept === activeUser.dept : filterByDept(m.targetDept));
+
+  // MEETINGS FILTERING & VISIBILITY RULE (REQUIREMENT SPECIFIC):
+  // - Normal employees outside PM team: Show ONLY meetings where they are EXPLICITLY INCLUDED as participants!
+  // - Executives, PC, PM Team, TL, Sub-TL: Show meetings for selected dept or target.
+  const filteredMeetings = meetingsList.filter(m => {
+    if (isNormalEmp && !isPMTeam) {
+      return m.participants?.some(p => p.toLowerCase().includes(activeUser?.name.toLowerCase()) || p.includes(activeUser?.id));
+    }
+    return filterByDept(m.targetDept);
+  });
+
+  const shouldShowMeetingsSection = (isCEO || isPC || isTL || isPMTeam || filteredMeetings.length > 0);
 
   const todayOnLeaveList = leavesList.filter(l => l.status === 'Approved' && filterByDept(l.dept));
 
@@ -242,15 +254,15 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
         </div>
       </div>
 
-      {/* PROMINENT SCHEDULED MEETINGS SECTION WITH MS TEAMS IMPORT LINK */}
-      {(isCEO || isPC || isTL || isNormalEmp) && (
+      {/* SCHEDULED MEETINGS SECTION (EXPLICIT USER INCLUSION FILTERING) */}
+      {shouldShowMeetingsSection && (
         <div className="glow-card p-5 mb-6 border-cyan-500/30">
           <div className="card-section-header justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-cyan-400" />
               <h3>📅 Upcoming Scheduled Meetings & Syncs ({filteredMeetings.length})</h3>
             </div>
-            {(isCEO || isPC || isTL) && (
+            {(isCEO || isPC || isTL || isPMTeam) && (
               <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-gold btn-xs">
                 <PlusCircle className="w-3.5 h-3.5 mr-1" /> Schedule / Import Meeting Link
               </button>
@@ -335,7 +347,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           {/* Clean Redesigned Meetings Cards Grid */}
           <div className="meetings-grid-container">
             {filteredMeetings.length === 0 ? (
-              <p className="text-xs text-slate-500 italic col-span-full">No upcoming meetings scheduled.</p>
+              <p className="text-xs text-slate-500 italic col-span-full">No upcoming meetings scheduled where you are included.</p>
             ) : (
               filteredMeetings.map(mtg => (
                 <div key={mtg.id} className="meeting-card-item">
