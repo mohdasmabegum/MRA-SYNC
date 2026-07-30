@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUsers, getWorkLogs, addWorkLog, updateWorkLogStatus } from '../services/db';
 import { useToast } from '../context/ToastContext';
-import { ArrowRightLeft, PlusCircle, FileCheck, HardDrive, Boxes, ShieldAlert } from 'lucide-react';
+import { ArrowRightLeft, PlusCircle, FileCheck, HardDrive, Boxes, ArrowLeft } from 'lucide-react';
 
 export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
   const { showToast, showModalPopup } = useToast();
@@ -86,14 +86,13 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
     });
   };
 
-  // Receiver Actions
   const handleAcceptTask = (id, hwDocReceived) => {
     if (!hwDocReceived) {
       showToast('CANNOT ACCEPT TASK: You must verify and check that Hardware & Documentation have been physically received!', 'warning', 'Verification Mandatory');
       return;
     }
 
-    const updated = updateWorkLogStatus(id, 'Accepted / In Progress', { hardwareDocReceived: true });
+    updateWorkLogStatus(id, 'Accepted / In Progress', { hardwareDocReceived: true });
     showToast(`Task ${id} accepted! Status updated to In Progress.`, 'success');
   };
 
@@ -107,7 +106,7 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
 
   const handleMarkComplete = (id) => {
     const task = workLogs.find(w => w.id === id);
-    const updated = updateWorkLogStatus(id, 'Completed ✅');
+    updateWorkLogStatus(id, 'Completed ✅');
 
     showToast(`Work request #${id} marked as COMPLETED ✅! Alert popped up to sender (${task.workAlloter}).`, 'success', 'Task Complete!');
 
@@ -119,18 +118,20 @@ export const WorkTransferPortal = ({ activeUser, onNavigateToInventory }) => {
     });
   };
 
-  // STRICT ACCESS CONTROL FILTERING:
-  // - Normal employees: Strictly ONLY their own work logs (received or sent)
-  // - TL / Sub-TL: Work logs belonging to their department members
-  // - CEO & PC: All work logs
   const displayedWorkLogs = workLogs.filter(w => {
     if (isNormalEmp) return w.receiverEmpId === activeUser?.id || w.senderEmpId === activeUser?.id;
     if (isTLOrSubTL) return w.fromDept === activeUser?.dept || w.toDept === activeUser?.dept;
-    return true; // CEO and PC see all
+    return true;
   });
 
   return (
     <div className="portal-page-container">
+      {/* Universal Back Button */}
+      <button onClick={() => window.history.back()} className="btn-back">
+        <ArrowLeft className="w-4 h-4" />
+        <span>Back</span>
+      </button>
+
       {/* Header Bar */}
       <div className="portal-header-bar glow-card">
         <div>

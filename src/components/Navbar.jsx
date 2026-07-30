@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import logoImg from '../assets/logo.jpg';
 import { useToast } from '../context/ToastContext';
-import { getWorkLogs, getLeaves } from '../services/db';
+import { getWorkLogs, getLeaves, getMeetings } from '../services/db';
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -15,12 +15,17 @@ import {
   ShieldCheck,
   Settings as SettingsIcon,
   Sun,
-  Moon
+  Moon,
+  Clock,
+  Video,
+  X
 } from 'lucide-react';
 
 export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setSelectedDept, theme, setTheme, onLogout }) => {
   const { showToast, showModalPopup } = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsList, setNotificationsList] = useState([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
   const isPC = activeUser?.role === 'PROJECT_COORDINATOR';
@@ -41,18 +46,70 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
     const checkUpdates = () => {
       const logs = getWorkLogs();
       const leaves = getLeaves();
-      let count = 0;
+      const meetings = getMeetings();
+      const notifs = [];
 
+      // 1. Work & Leave Action Items
       if (isNormalEmp || isTLOrSubTL) {
         const pendingWork = logs.filter(w => w.receiverEmpId === activeUser.id && w.status === 'Pending Acceptance');
-        count += pendingWork.length;
-      }
-      if (activeUser?.role === 'HR' || isCEO) {
-        const pendingLeaves = leaves.filter(l => l.status === 'Pending');
-        count += pendingLeaves.length;
+        pendingWork.forEach(w => {
+          notifs.push({
+            id: `wrk-${w.id}`,
+            title: 'New Work Task Assigned',
+            message: `"${w.projectName}" assigned by ${w.workAlloter}`,
+            time: w.createdDate,
+            type: 'work'
+          });
+        });
       }
 
-      setUnreadCount(count);
+      if (activeUser?.role === 'HR' || isCEO) {
+        const pendingLeaves = leaves.filter(l => l.status === 'Pending');
+        pendingLeaves.forEach(l => {
+          notifs.push({
+            id: `lv-${l.id}`,
+            title: 'Leave Application Pending',
+            message: `${l.name} requested ${l.noOfDays} days (${l.leaveType})`,
+            time: l.appliedDate,
+            type: 'leave'
+          });
+        });
+      }
+
+      // 2. TIMED MEETING REMINDERS (1 Hour, 30 Min, 20 Min, 10 Min Reminders)
+      meetings.forEach(mtg => {
+        notifs.push({
+          id: `mtg-1h-${mtg.id}`,
+          title: `⏰ 1 Hour Meeting Reminder: "${mtg.title}"`,
+          message: `Scheduled for ${mtg.date} @ ${mtg.time} (${mtg.targetDept})`,
+          time: 'Remind 60m before',
+          type: 'meeting_reminder'
+        });
+        notifs.push({
+          id: `mtg-30m-${mtg.id}`,
+          title: `⚡ 30 Minute Meeting Reminder: "${mtg.title}"`,
+          message: `Starting in 30 mins! Join link attached.`,
+          time: 'Remind 30m before',
+          type: 'meeting_reminder'
+        });
+        notifs.push({
+          id: `mtg-20m-${mtg.id}`,
+          title: `🚨 20 Minute Warning: "${mtg.title}"`,
+          message: `Starting in 20 mins with ${mtg.organizer}`,
+          time: 'Remind 20m before',
+          type: 'meeting_reminder'
+        });
+        notifs.push({
+          id: `mtg-10m-${mtg.id}`,
+          title: `🔔 10 Minute Final Call: "${mtg.title}"`,
+          message: `Starting in 10 mins @ ${mtg.time}`,
+          time: 'Remind 10m before',
+          type: 'meeting_reminder'
+        });
+      });
+
+      setNotificationsList(notifs);
+      setUnreadCount(notifs.length);
     };
 
     checkUpdates();
@@ -141,10 +198,43 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             </button>
           )}
 
-          {/* Notifications */}
-          <div className="nav-icon-btn" title={`${unreadCount} pending items requiring action`}>
-            <Bell className="w-5 h-5 text-slate-300" />
-            {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+          {/* Notifications Bell Dropdown */}
+          <div className="relative">
+            <div
+              onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+              className="nav-icon-btn"
+              title={`${unreadCount} notifications & meeting reminders`}
+            >
+              <Bell className="w-5 h-5 text-slate-300" />
+              {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+            </div>
+
+            {showNotifDropdown && (
+              <div className="absolute right-0 mt-2 w-80 glow-card p-4 z-50 border border-cyan-500/40 shadow-2xl text-xs space-y-2">
+                <div className="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
+                  <span className="font-bold text-white flex items-center gap-1">
+                    <Clock className="w-4 h-4 text-amber-400" /> Meeting Reminders & Alerts ({notificationsList.length})
+                  </span>
+                  <button onClick={() => setShowNotifDropdown(false)} className="text-slate-400 hover:text-white">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {notificationsList.length === 0 ? (
+                    <p className="text-slate-500 italic text-center py-2">No active reminders.</p>
+                  ) : (
+                    notificationsList.map(n => (
+                      <div key={n.id} className="bg-slate-900/80 p-2 rounded border border-slate-800 space-y-0.5">
+                        <div className="font-bold text-cyan-300">{n.title}</div>
+                        <div className="text-slate-300 text-[11px]">{n.message}</div>
+                        <div className="text-[10px] text-amber-400 font-mono">{n.time}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* User Profile Card */}

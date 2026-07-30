@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getMaterials, addMaterialRequest, updateMaterialStatus, getUsers } from '../services/db';
 import { useToast } from '../context/ToastContext';
-import { Boxes, PlusCircle, ShoppingCart, CheckCircle, Clock, AlertTriangle, Layers, Send, ShieldAlert, Check } from 'lucide-react';
+import { Boxes, PlusCircle, ShoppingCart, AlertTriangle, Layers, ArrowLeft, Check } from 'lucide-react';
 
 export const InventoryPortal = ({ activeUser, selectedDept }) => {
   const { showToast } = useToast();
@@ -15,7 +15,6 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
   const isInventoryUser = activeUser?.dept === 'Inventory & Logistics';
   const isNormalEmp = activeUser?.role === 'EMPLOYEE';
 
-  // Target TL Selection for Employees: MUST BE from their OWN department!
   const ownDeptTLs = usersList.filter(u =>
     (u.role === 'TL' || u.role === 'SUB_TL' || u.role === 'CEO/FOUNDER/DIRECTOR') &&
     (isCEO || isPC ? true : u.dept === activeUser?.dept)
@@ -84,38 +83,12 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
     });
   };
 
-  // Inventory User & TL Actions
   const handleTLApproveRequest = (id) => {
     updateMaterialStatus(id, {
       status: 'TL Approved -> Forwarded to Inventory',
       updates: `Approved by TL ${activeUser?.name}. Forwarded to Inventory team for stock fulfillment.`
     });
     showToast(`Request ${id} approved by TL & forwarded to Inventory team!`, 'success');
-  };
-
-  const handleAcceptRequest = (id, available) => {
-    const now = new Date().toLocaleString();
-    if (available === 'Yes') {
-      updateMaterialStatus(id, {
-        availableAtMoment: 'Yes',
-        status: 'Provided / Handover',
-        inventoryHandledBy: `${activeUser?.name} (${activeUser?.id})`,
-        acceptedDate: now,
-        providedDate: now,
-        noOfDaysForProvidingMaterial: 'Immediate Handover',
-        updates: 'Material available in stock. Handed over to requester.'
-      });
-      showToast(`Material request ${id} accepted & provided from stock!`, 'success');
-    } else {
-      updateMaterialStatus(id, {
-        availableAtMoment: 'No',
-        status: 'Pending for Order (To-Do)',
-        inventoryHandledBy: `${activeUser?.name} (${activeUser?.id})`,
-        acceptedDate: now,
-        updates: 'Item NOT in stock. Added to Inventory Pending Order To-Do list.'
-      });
-      showToast(`Material ${id} marked NOT AVAILABLE. Added to Order To-Do list!`, 'warning');
-    }
   };
 
   const handlePlaceOrder = (id) => {
@@ -130,17 +103,6 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
     showToast(`Order placed for request ${id}.`, 'info');
   };
 
-  const handleOrderReceived = (id) => {
-    const now = new Date().toLocaleString();
-    updateMaterialStatus(id, {
-      status: 'Provided / Handover',
-      orderReceivedDate: now,
-      providedDate: now,
-      updates: 'Supplier order received & handed over.'
-    });
-    showToast(`Material for request ${id} received & handed over!`, 'success');
-  };
-
   // Department-Wise Filtering
   const isDeptFiltered = selectedDept && selectedDept !== 'ALL DEPARTMENTS';
 
@@ -151,16 +113,18 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
     return true;
   });
 
-  // Section 1: Team Requisitions (Employee -> TL / Sub-TL)
   const teamRequisitions = displayedMaterials.filter(m => m.empId !== activeUser?.id);
-
-  // Section 2: TL / Sub-TL -> Inventory Requisitions
   const tlToInventoryRequisitions = displayedMaterials.filter(m => m.status.includes('Forwarded') || m.status.includes('Order') || m.status.includes('Provided') || m.empId === activeUser?.id);
-
   const todoOrderList = displayedMaterials.filter(m => m.status === 'Pending for Order (To-Do)');
 
   return (
     <div className="portal-page-container">
+      {/* Universal Back Button */}
+      <button onClick={() => window.history.back()} className="btn-back">
+        <ArrowLeft className="w-4 h-4" />
+        <span>Back</span>
+      </button>
+
       {/* Header Bar */}
       <div className="portal-header-bar glow-card">
         <div>
@@ -169,7 +133,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
             Material Requisitions & Inventory Portal ({isNormalEmp ? activeUser?.dept : selectedDept})
           </h2>
           <p className="portal-subtitle">
-            {isNormalEmp ? `Requisitions are forwarded to your ${activeUser?.dept} Team Lead / Sub-TL.` : 'Manage team requisitions, TL approvals, and Inventory stock fulfillment.'}
+            {isNormalEmp ? `Requisitions are forwarded to your ${activeUser?.dept} Team Lead / Sub-TL.` : 'Departmental stock status and inventory fulfillments.'}
           </p>
         </div>
 
@@ -179,7 +143,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
         </button>
       </div>
 
-      {/* Requisition Form Drawer */}
+      {/* Requisition Form */}
       {showForm && (
         <form onSubmit={handleSubmit} className="glow-card form-card p-6 mb-6">
           <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-2">
@@ -279,7 +243,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
         </div>
       )}
 
-      {/* TWO SECTIONS FOR TL / SUB-TL ACCOUNTS (REQUIREMENT SPECIFICATION) */}
+      {/* TWO SECTIONS FOR TL / SUB-TL ACCOUNTS */}
       {(isTLOrSubTL || isCEO || isPC || isInventoryUser) ? (
         <div className="space-y-6">
           {/* SECTION 1: Team Requisitions (Employee -> TL / Sub-TL) */}
@@ -300,7 +264,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
                     <th>Qty</th>
                     <th>Project</th>
                     <th>Priority</th>
-                    <th>Status</th>
+                    <th>Inventory Status</th>
                     <th>TL Approval Action</th>
                   </tr>
                 </thead>
@@ -352,7 +316,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
           <div className="glow-card p-5 border-cyan-500/30">
             <h3 className="text-md font-bold text-cyan-400 mb-4 flex items-center gap-2">
               <Boxes className="w-5 h-5 text-cyan-400" />
-              SECTION 2: TL / Sub-TL Requisitions to Inventory Team ({tlToInventoryRequisitions.length})
+              SECTION 2: Department Stock Status & Inventory Requisitions ({tlToInventoryRequisitions.length})
             </h3>
 
             <div className="table-responsive">
@@ -363,16 +327,15 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
                     <th>Requester</th>
                     <th>Material Needed</th>
                     <th>Qty</th>
-                    <th>Stock Available?</th>
-                    <th>Status</th>
+                    <th>Stock Availability</th>
+                    <th>Inventory Status</th>
                     <th>Inventory Handler</th>
-                    <th>Inventory Fulfillment Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tlToInventoryRequisitions.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-4 text-slate-500 italic">No items currently forwarded to Inventory.</td>
+                      <td colSpan="7" className="text-center py-4 text-slate-500 italic">No items currently forwarded to Inventory.</td>
                     </tr>
                   ) : (
                     tlToInventoryRequisitions.map(m => (
@@ -386,7 +349,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
                         <td className="text-xs text-amber-300 font-mono">{m.noOfUnits}</td>
                         <td>
                           <span className={`font-semibold text-xs ${m.availableAtMoment === 'Yes' ? 'text-emerald-400' : m.availableAtMoment === 'No' ? 'text-rose-400' : 'text-amber-400'}`}>
-                            {m.availableAtMoment}
+                            {m.availableAtMoment || 'In Warehouse Stock Check'}
                           </span>
                         </td>
                         <td>
@@ -395,27 +358,6 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
                           </span>
                         </td>
                         <td className="text-xs text-slate-400">{m.inventoryHandledBy}</td>
-                        <td>
-                          {(isInventoryUser || isCEO) && (
-                            <div className="flex items-center gap-1">
-                              {m.status.includes('Forwarded') && (
-                                <>
-                                  <button onClick={() => handleAcceptRequest(m.id, 'Yes')} className="btn-emerald btn-xs">Available (Handover)</button>
-                                  <button onClick={() => handleAcceptRequest(m.id, 'No')} className="btn-amber btn-xs">Not Available</button>
-                                </>
-                              )}
-                              {m.status === 'Pending for Order (To-Do)' && (
-                                <button onClick={() => handlePlaceOrder(m.id)} className="btn-gold btn-xs">Place Order</button>
-                              )}
-                              {m.status === 'Order Placed' && (
-                                <button onClick={() => handleOrderReceived(m.id)} className="btn-emerald btn-xs">Order Received ✅</button>
-                              )}
-                              {m.status.includes('Provided') && (
-                                <span className="text-xs text-emerald-400 font-semibold">Handover Complete ✅</span>
-                              )}
-                            </div>
-                          )}
-                        </td>
                       </tr>
                     ))
                   )}
@@ -425,7 +367,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
           </div>
         </div>
       ) : (
-        /* Single Section for Normal Employees (Strict Personal View) */
+        /* Single Section for Normal Employees */
         <div className="glow-card p-5">
           <h3 className="text-md font-bold text-slate-200 mb-4">
             My Material Requisitions Sheet ({displayedMaterials.length})
@@ -441,7 +383,7 @@ export const InventoryPortal = ({ activeUser, selectedDept }) => {
                   <th>Quantity</th>
                   <th>Project</th>
                   <th>Priority</th>
-                  <th>Status</th>
+                  <th>Inventory Status</th>
                   <th>Updates</th>
                 </tr>
               </thead>

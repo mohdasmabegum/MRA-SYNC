@@ -29,12 +29,12 @@
   --shadow-gold: 0 10px 30px -10px rgba(212, 175, 55, 0.3);
 }
 
-/* Professional Light Theme System */
+/* COMPLETE HIGH-END PROFESSIONAL LIGHT THEME OVERHAUL */
 .theme-light {
-  --bg-dark: #F8FAFC;
+  --bg-dark: #F1F5F9;
   --bg-surface: #FFFFFF;
-  --bg-card: rgba(255, 255, 255, 0.92);
-  --bg-card-hover: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F8FAFC;
 
   --gold-primary: #C59B27;
   --gold-light: #856404;
@@ -50,53 +50,71 @@
 
   --text-main: #0F172A;
   --text-muted: #475569;
-  --border-card: rgba(203, 213, 225, 0.8);
-  --border-silver: rgba(148, 163, 184, 0.4);
+  --border-card: #CBD5E1;
+  --border-silver: #E2E8F0;
 
   --shadow-gold: 0 10px 25px -5px rgba(197, 155, 39, 0.2);
 }
 
-.theme-light body,
-.theme-light .app-shell {
-  background-color: #F8FAFC;
-  color: #0F172A;
+html, body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.theme-light .glow-card {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+.theme-light html,
+.theme-light body,
+.theme-light .app-shell,
+.theme-light .app-main-content,
+.theme-light .portal-page-container,
+.theme-light .auth-page-container {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+.theme-light .glow-card,
+.theme-light .dash-hero-card,
+.theme-light .portal-header-bar,
+.theme-light .form-card,
+.theme-light .auth-card {
+  background: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.07) !important;
 }
 
 .theme-light .navbar-container {
-  background: rgba(255, 255, 255, 0.96);
-  border-bottom-color: #E2E8F0;
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-bottom-color: #E2E8F0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 
 .theme-light .nav-link {
-  color: #475569;
+  color: #475569 !important;
 }
 
 .theme-light .nav-link:hover {
-  background: #F1F5F9;
-  color: #0F172A;
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
 }
 
 .theme-light .nav-link.active {
-  background: rgba(197, 155, 39, 0.12);
-  color: #856404;
-  border-color: rgba(197, 155, 39, 0.3);
+  background: rgba(197, 155, 39, 0.14) !important;
+  color: #745700 !important;
+  border-color: rgba(197, 155, 39, 0.4) !important;
 }
 
 .theme-light .dept-selector-wrapper {
-  background: #F1F5F9;
-  border-color: #CBD5E1;
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
 }
 
 .theme-light .dept-select-styled,
 .theme-light .dept-option-styled {
-  background: #F1F5F9;
-  color: #0F172A;
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
 }
 
 .theme-light .input-with-icon input,
@@ -113,23 +131,23 @@
 }
 
 .theme-light select option {
-  background-color: #FFFFFF;
-  color: #0F172A;
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
 }
 
 .theme-light .data-table th {
-  background: #F1F5F9;
-  color: #1E293B;
-  border-bottom-color: #E2E8F0;
+  background: #F1F5F9 !important;
+  color: #1E293B !important;
+  border-bottom-color: #CBD5E1 !important;
 }
 
 .theme-light .data-table td {
-  border-bottom-color: #F1F5F9;
-  color: #334155;
+  border-bottom-color: #E2E8F0 !important;
+  color: #334155 !important;
 }
 
 .theme-light .data-table tr:hover td {
-  background: #F8FAFC;
+  background: #F8FAFC !important;
 }
 
 .theme-light .hero-title,
@@ -138,39 +156,106 @@
 .theme-light .emp-name-text,
 .theme-light h3,
 .theme-light h4 {
-  color: #0F172A;
+  color: #0F172A !important;
 }
 
 .theme-light .meeting-card-item {
-  background: #FFFFFF;
-  border-color: #CBD5E1;
-  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+  background: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05) !important;
 }
 
 .theme-light .meeting-card-item:hover {
-  border-color: #0284C7;
-  box-shadow: 0 8px 25px rgba(2, 132, 199, 0.15);
+  border-color: #0284C7 !important;
+  box-shadow: 0 8px 25px rgba(2, 132, 199, 0.15) !important;
 }
 
 .theme-light .modal-backdrop {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.6) !important;
 }
 
 .theme-light .modal-content {
-  background: #FFFFFF;
-  color: #0F172A;
-  border-color: #E2E8F0;
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
 }
 
 .theme-light .modal-header h3,
 .theme-light .modal-body {
-  color: #0F172A;
+  color: #0F172A !important;
 }
 
 .theme-light .app-footer {
+  background: #FFFFFF !important;
+  border-top-color: #CBD5E1 !important;
+  color: #64748B !important;
+}
+
+/* Universal Back Button */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.theme-light .btn-back {
   background: #FFFFFF;
-  border-top-color: #E2E8F0;
-  color: #64748B;
+  border-color: #CBD5E1;
+  color: #0F172A;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.btn-back:hover {
+  background: var(--gold-primary);
+  color: #000000;
+  border-color: var(--gold-primary);
+  transform: translateX(-2px);
+}
+
+/* Meeting Scheduled Alerts Modal Redesign */
+.meeting-alert-card {
+  background: rgba(14, 20, 32, 0.95);
+  border: 1.5px solid rgba(56, 189, 248, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.theme-light .meeting-alert-card {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+}
+
+.meeting-alert-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.meeting-alert-time {
+  font-size: 0.78rem;
+  color: var(--accent-cyan);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+
+.meeting-alert-by {
+  font-size: 0.74rem;
+  color: var(--gold-light);
+  font-weight: 600;
 }
 
 * {
@@ -178,14 +263,6 @@
   margin: 0;
   padding: 0;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-body {
-  background-color: var(--bg-dark);
-  color: var(--text-main);
-  min-height: 100vh;
-  overflow-x: hidden;
-  line-height: 1.5;
 }
 
 /* Metallic Gradients */
@@ -213,7 +290,17 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-/* Redesigned Meeting Schedule Cards Grid */
+/* Card Glow Utility */
+.glow-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+
+/* Meetings Grid */
 .meetings-grid-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -485,7 +572,7 @@ body {
   box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
 }
 
-/* Auth Page Layout & Input Styling Fix */
+/* Auth Page */
 .auth-page-container {
   min-height: 100vh;
   display: flex;
@@ -615,7 +702,6 @@ body {
   z-index: 5;
 }
 
-/* Explicit High Contrast Full Width Inputs Fix */
 .input-with-icon input,
 .input-with-icon select,
 .auth-input,
@@ -634,7 +720,6 @@ select {
   font-size: 0.9rem !important;
   outline: none !important;
   box-sizing: border-box !important;
-  box-shadow: none !important;
 }
 
 .theme-light .input-with-icon input,
@@ -1158,7 +1243,7 @@ select:focus {
 
 .modal-content {
   width: 100%;
-  max-width: 520px;
+  max-width: 540px;
   padding: 28px;
   animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
 }

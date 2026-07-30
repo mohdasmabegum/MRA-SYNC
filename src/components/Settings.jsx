@@ -1,6 +1,6 @@
 import React from 'react';
 import { useToast } from '../context/ToastContext';
-import { Sun, Moon, LogOut, User, ShieldCheck, Mail, Building, Database, Palette, Settings as SettingsIcon } from 'lucide-react';
+import { Sun, Moon, LogOut, User, ShieldCheck, Mail, Database, Palette, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import { exportDatabaseJSON } from '../services/db';
 
 export const Settings = ({ activeUser, theme, setTheme, onLogout }) => {
@@ -31,6 +31,12 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout }) => {
 
   return (
     <div className="portal-page-container">
+      {/* Universal Back Button */}
+      <button onClick={() => window.history.back()} className="btn-back">
+        <ArrowLeft className="w-4 h-4" />
+        <span>Back</span>
+      </button>
+
       {/* Header Bar */}
       <div className="portal-header-bar glow-card">
         <div>

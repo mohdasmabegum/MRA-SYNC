@@ -4,7 +4,6 @@ import { useToast } from '../context/ToastContext';
 import {
   Users,
   CalendarCheck,
-  Boxes,
   ArrowRightLeft,
   Award,
   Building,
@@ -16,7 +15,12 @@ import {
   PlusCircle,
   Video,
   ChevronRight,
-  User
+  User,
+  ArrowLeft,
+  Link,
+  Check,
+  Layers,
+  FileText
 } from 'lucide-react';
 
 export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigate }) => {
@@ -30,6 +34,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
   const [selectedEmpModal, setSelectedEmpModal] = useState(null);
   const [selectedMeetingModal, setSelectedMeetingModal] = useState(null);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [activeTabSubView, setActiveTabSubView] = useState('roster'); // 'roster' | 'on_leave'
 
   const [meetingFormData, setMeetingFormData] = useState({
     title: '',
@@ -39,6 +44,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
     date: new Date().toISOString().split('T')[0],
     time: '10:00 AM',
     agenda: '',
+    teamsLink: '',
     participants: [activeUser?.name]
   });
 
@@ -53,19 +59,37 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
     return () => window.removeEventListener('mra_db_updated', fetchData);
   }, []);
 
-  // Popup Meeting Alert on initial load for CEO, PC, TL, Sub-TL
+  // Popup Clean Redesigned Meeting Alert on initial load for CEO, PC, TL, Sub-TL
   useEffect(() => {
     if ((isCEO || isPC || isTL) && meetingsList.length > 0) {
       const popupShown = sessionStorage.getItem(`mra_mtg_popup_shown_${activeUser.id}`);
       if (!popupShown) {
         sessionStorage.setItem(`mra_mtg_popup_shown_${activeUser.id}`, 'true');
-        const upcomingCount = meetingsList.length;
-        const mtgNames = meetingsList.slice(0, 2).map(m => `• "${m.title}" (By ${m.organizer} on ${m.date} @ ${m.time})`).join('\n');
+
+        const structuredAlertContent = (
+          <div className="space-y-3 my-2">
+            <p className="text-xs text-slate-300">You have {meetingsList.length} upcoming scheduled meetings:</p>
+            <div className="space-y-2 max-h-56 overflow-y-auto">
+              {meetingsList.map(m => (
+                <div key={m.id} className="meeting-alert-card">
+                  <div className="meeting-alert-title">{m.title}</div>
+                  <div className="meeting-alert-time">📅 {m.date} @ {m.time}</div>
+                  <div className="meeting-alert-by">Organized by {m.organizer} ({m.targetDept})</div>
+                  {m.teamsLink && (
+                    <div className="text-[11px] text-cyan-400 font-mono flex items-center gap-1 mt-1">
+                      <Link className="w-3 h-3" /> {m.teamsLink}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
 
         showModalPopup({
-          title: `📅 Scheduled Meetings Alert (${upcomingCount})`,
-          message: `You have upcoming scheduled meetings:\n\n${mtgNames}\n\nReview details on your main dashboard screen.`,
-          iconType: 'info',
+          title: `📅 Scheduled Meetings Alert (${meetingsList.length})`,
+          message: structuredAlertContent,
+          iconType: 'meeting',
           confirmText: 'View Dashboard'
         });
       }
@@ -80,7 +104,6 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
     setMeetingsList(getMeetings());
   };
 
-  // Department Filter helper
   const filterByDept = (dept) => {
     if (!selectedDept || selectedDept === 'ALL DEPARTMENTS') return true;
     return dept === selectedDept;
@@ -88,63 +111,59 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
   const isSpecificDeptSelected = selectedDept && selectedDept !== 'ALL DEPARTMENTS';
 
-  // Role-Based User List Visibility:
-  // - CEO & PC: Can view filtered users of selected dept or all depts
-  // - TL / Sub-TL: Can view ONLY members of their OWN department
-  // - Employee: CANNOT view any roster!
+  // Role-Based Employee Roster Scoping:
+  // - PC: By default on main dashboard, show ONLY Project Management team employees!
+  // - CEO: Show all or selected dept
+  // - TL / Sub-TL: Show own department team members only
+  // - Normal Employee: Cannot view roster
   const getVisibleUsers = () => {
-    if (isNormalEmp) return []; // Employees cannot view roster
-    if (isTL) return usersList.filter(u => u.dept === activeUser?.dept); // TLs only see own team
-    return usersList.filter(u => filterByDept(u.dept)); // CEO & PC see selected dept
+    if (isNormalEmp) return [];
+    if (isTL) return usersList.filter(u => u.dept === activeUser?.dept);
+    if (isPC && !isSpecificDeptSelected) return usersList.filter(u => u.dept === 'Project Management');
+    return usersList.filter(u => filterByDept(u.dept));
   };
 
   const visibleUsers = getVisibleUsers();
+
+  // Filters
   const filteredLeaves = leavesList.filter(l => isNormalEmp ? l.empId === activeUser.id : filterByDept(l.dept));
-  const filteredMaterials = materialsList.filter(m => isNormalEmp ? m.empId === activeUser.id : filterByDept(m.deptName));
   const filteredWorkLogs = workLogsList.filter(w => isNormalEmp ? (w.receiverEmpId === activeUser.id || w.senderEmpId === activeUser.id) : (filterByDept(w.fromDept) || filterByDept(w.toDept)));
   const filteredMeetings = meetingsList.filter(m => isNormalEmp ? m.targetDept === activeUser.dept : filterByDept(m.targetDept));
 
-  // Compute Employee Work Performance Metrics
-  const getEmployeeStats = (empId) => {
-    const empLeaves = leavesList.filter(l => l.empId === empId && l.status === 'Approved');
-    const isOnLeaveToday = empLeaves.length > 0;
+  // Approved On-Leave Employees List for "Today On Leave" tab
+  const todayOnLeaveList = leavesList.filter(l => l.status === 'Approved' && filterByDept(l.dept));
 
-    const acceptedRequests = workLogsList.filter(w => w.receiverEmpId === empId && w.status.includes('Accepted'));
-    const completedRequests = workLogsList.filter(w => w.receiverEmpId === empId && w.status.includes('Completed'));
+  // Compute Employee Detailed Work Stats
+  const getEmployeeDetailedStats = (empId) => {
+    const activeTasks = workLogsList.filter(w => w.receiverEmpId === empId && w.status === 'Pending Acceptance');
+    const acceptedTasks = workLogsList.filter(w => w.receiverEmpId === empId && w.status.includes('Accepted'));
+    const completedTasks = workLogsList.filter(w => w.receiverEmpId === empId && w.status.includes('Completed'));
 
-    return {
-      totalLeaves: empLeaves.length,
-      status: isOnLeaveToday ? 'On Leave' : 'Active Working',
-      acceptedCount: acceptedRequests.length,
-      completedCount: completedRequests.length
-    };
-  };
+    // Past 1-Week Completed Tasks
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-  // Find Top Performer Employee per selected department
-  const getTopDepartmentPerformer = (deptName) => {
-    const counts = {};
-    workLogsList.forEach(w => {
-      if (w.receiverEmpId && (deptName === 'ALL DEPARTMENTS' || w.toDept === deptName)) {
-        if (!counts[w.receiverEmpId]) {
-          counts[w.receiverEmpId] = { id: w.receiverEmpId, name: w.receiverName, accepted: 0, completed: 0 };
-        }
-        if (w.status.includes('Accepted') || w.status.includes('Completed')) {
-          counts[w.receiverEmpId].accepted += 1;
-        }
-        if (w.status.includes('Completed')) {
-          counts[w.receiverEmpId].completed += 1;
-        }
-      }
+    const pastWeekCompleted = completedTasks.filter(w => {
+      if (!w.completedDate || w.completedDate === 'Pending') return false;
+      const d = new Date(w.completedDate);
+      return !isNaN(d.getTime()) && d >= oneWeekAgo;
     });
 
-    const sorted = Object.values(counts).sort((a, b) => b.accepted - a.accepted);
-    return sorted.length > 0 ? sorted[0] : null;
+    const empLeaves = leavesList.filter(l => l.empId === empId);
+    const isOnLeaveToday = empLeaves.some(l => l.status === 'Approved');
+    const upcomingLeaves = empLeaves.filter(l => l.status === 'Pending' || l.status === 'Approved');
+
+    return {
+      activeCount: activeTasks.length,
+      acceptedCount: acceptedTasks.length,
+      completedCount: completedTasks.length,
+      pastWeekCompletedCount: pastWeekCompleted.length,
+      acceptedTasksList: acceptedTasks,
+      completedTasksList: completedTasks,
+      isOnLeaveToday,
+      upcomingLeaves
+    };
   };
-
-  const topPerformer = getTopDepartmentPerformer(selectedDept);
-
-  // To-Do Work Tasks for Project Coordinator / User
-  const pcToDoTasks = workLogsList.filter(w => w.receiverEmpId === activeUser?.id && !w.status.includes('Completed'));
 
   const handleScheduleMeetingSubmit = (e) => {
     e.preventDefault();
@@ -164,12 +183,21 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       date: new Date().toISOString().split('T')[0],
       time: '10:00 AM',
       agenda: '',
+      teamsLink: '',
       participants: [activeUser?.name]
     });
   };
 
   return (
     <div className="portal-page-container">
+      {/* Universal Back Button */}
+      {isSpecificDeptSelected && (
+        <button onClick={() => setSelectedDept('ALL DEPARTMENTS')} className="btn-back">
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Main Executive Overview</span>
+        </button>
+      )}
+
       {/* Hero Welcome Banner */}
       <div className="dash-hero-card glow-card">
         <div className="dash-hero-content">
@@ -181,27 +209,15 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             Welcome back, <span className="text-gradient-gold">{activeUser?.name}</span>
           </h2>
           <p className="hero-subtitle">
-            {isPC && 'Project Coordinator Console: Select a specific department from the navbar dropdown to view departmental logs, top workers, and tasks.'}
-            {isCEO && 'CEO Executive Control: Department-wise overview of leaves, inventory, employees, and scheduled meetings.'}
-            {isTL && `Team Lead Dashboard for ${activeUser?.dept}: Team member tracking, leaves, and inventory requisitions.`}
-            {isNormalEmp && 'Employee Console: View your personal work transfer tasks, leave applications, and material requisitions.'}
+            {isPC && 'Project Coordinator Overview: Project Management team members & personal tasks visible.'}
+            {isCEO && 'CEO Executive Control: Departmental leaves, employees, and scheduled meetings overview.'}
+            {isTL && `Team Lead Dashboard for ${activeUser?.dept}: Team member tracking and leave applications.`}
+            {isNormalEmp && 'Employee Console: View your personal work transfer tasks and leave applications.'}
           </p>
         </div>
-
-        {/* Top Performer Card (Visible for CEO & PC when department selected) */}
-        {(isCEO || isPC) && isSpecificDeptSelected && topPerformer && (
-          <div className="top-performer-card">
-            <Award className="w-8 h-8 text-amber-400 mb-2" />
-            <div className="top-title">Top Worker ({selectedDept})</div>
-            <div className="top-name">{topPerformer.name}</div>
-            <div className="top-stats font-mono">
-              <span className="text-amber-400">{topPerformer.accepted} Tasks Accepted</span> • {topPerformer.completed} Completed
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* KPI Metric Summary Cards */}
+      {/* KPI Metric Summary Cards (Material Inventory Removed for Executive CEO/PC Roles) */}
       <div className="metrics-grid">
         <div className="metric-card glow-card" onClick={() => onNavigate('leaves')}>
           <div className="metric-icon-box bg-gold-500/10 text-amber-400">
@@ -214,23 +230,12 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           </div>
         </div>
 
-        <div className="metric-card glow-card" onClick={() => onNavigate('inventory')}>
-          <div className="metric-icon-box bg-cyan-500/10 text-cyan-400">
-            <Boxes className="w-6 h-6" />
-          </div>
-          <div className="metric-info">
-            <span className="metric-label">Material & Inventory</span>
-            <span className="metric-value">{filteredMaterials.filter(m => m.status.includes('Order')).length} Orders Placed</span>
-            <span className="metric-sub">{filteredMaterials.filter(m => m.status.includes('Provided')).length} Handed Over ({selectedDept})</span>
-          </div>
-        </div>
-
         <div className="metric-card glow-card" onClick={() => onNavigate('work_transfer')}>
           <div className="metric-icon-box bg-emerald-500/10 text-emerald-400">
             <ArrowRightLeft className="w-6 h-6" />
           </div>
           <div className="metric-info">
-            <span className="metric-label">Work Transfers</span>
+            <span className="metric-label">My Work Transfers</span>
             <span className="metric-value">{filteredWorkLogs.filter(w => !w.status.includes('Completed')).length} Active Tasks</span>
             <span className="metric-sub">{filteredWorkLogs.filter(w => w.status.includes('Completed')).length} Completed ({selectedDept})</span>
           </div>
@@ -241,32 +246,32 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             <Users className="w-6 h-6" />
           </div>
           <div className="metric-info">
-            <span className="metric-label">{isNormalEmp ? 'My Department' : 'Department Members'}</span>
-            <span className="metric-value">{isNormalEmp ? activeUser?.dept : `${visibleUsers.length} Employees`}</span>
-            <span className="metric-sub">{selectedDept === 'ALL DEPARTMENTS' ? 'All Depts' : selectedDept}</span>
+            <span className="metric-label">{isPC && !isSpecificDeptSelected ? 'Project Management Team' : 'Department Members'}</span>
+            <span className="metric-value">{visibleUsers.length} Employees</span>
+            <span className="metric-sub">{selectedDept === 'ALL DEPARTMENTS' ? (isPC ? 'Project Mgmt' : 'All Depts') : selectedDept}</span>
           </div>
         </div>
       </div>
 
-      {/* REDESIGNED PROMINENT SCHEDULED MEETINGS SECTION (High-Contrast Glassmorphic Cards) */}
+      {/* PROMINENT SCHEDULED MEETINGS SECTION WITH MS TEAMS IMPORT LINK */}
       {(isCEO || isPC || isTL || isNormalEmp) && (
         <div className="glow-card p-5 mb-6 border-cyan-500/30">
           <div className="card-section-header justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-cyan-400" />
-              <h3>📅 Upcoming Scheduled Meetings & Syncs ({meetingsList.length})</h3>
+              <h3>📅 Upcoming Scheduled Meetings & Syncs ({filteredMeetings.length})</h3>
             </div>
             {(isCEO || isPC || isTL) && (
               <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-gold btn-xs">
-                <PlusCircle className="w-3.5 h-3.5 mr-1" /> Schedule New Meeting
+                <PlusCircle className="w-3.5 h-3.5 mr-1" /> Schedule / Import Meeting Link
               </button>
             )}
           </div>
 
-          {/* Schedule Meeting Form Modal */}
+          {/* Schedule / Import Meeting Form */}
           {showScheduleForm && (
             <form onSubmit={handleScheduleMeetingSubmit} className="bg-slate-900/90 p-4 rounded-lg border border-cyan-500/40 mb-4">
-              <h4 className="text-sm font-bold text-cyan-300 mb-3">🗓️ Schedule New Meeting</h4>
+              <h4 className="text-sm font-bold text-cyan-300 mb-3">🗓️ Schedule / Import MS Teams / Meeting Link</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs mb-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Meeting Title *</label>
@@ -310,6 +315,17 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   </div>
                 </div>
                 <div className="md:col-span-3">
+                  <label className="text-cyan-400 block mb-1 flex items-center gap-1">
+                    <Link className="w-3.5 h-3.5" /> MS Teams / Google Meet Link (Paste / Import Link)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. https://teams.microsoft.com/l/meetup-join/..."
+                    value={meetingFormData.teamsLink}
+                    onChange={e => setMeetingFormData({ ...meetingFormData, teamsLink: e.target.value })}
+                  />
+                </div>
+                <div className="md:col-span-3">
                   <label className="text-slate-400 block mb-1">Agenda & Brief *</label>
                   <textarea
                     placeholder="Enter meeting agenda..."
@@ -329,10 +345,10 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
           {/* Clean Redesigned Meetings Cards Grid */}
           <div className="meetings-grid-container">
-            {meetingsList.length === 0 ? (
+            {filteredMeetings.length === 0 ? (
               <p className="text-xs text-slate-500 italic col-span-full">No upcoming meetings scheduled.</p>
             ) : (
-              meetingsList.map(mtg => (
+              filteredMeetings.map(mtg => (
                 <div key={mtg.id} className="meeting-card-item">
                   <div className="meeting-card-header">
                     <div className="flex items-start gap-2">
@@ -354,6 +370,15 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                       <span className="meta-label">Date & Time:</span>
                       <span className="meta-val-time">{mtg.date} @ {mtg.time}</span>
                     </div>
+
+                    {mtg.teamsLink && (
+                      <div className="meta-item text-xs text-cyan-400 font-mono truncate" title={mtg.teamsLink}>
+                        <Link className="w-3.5 h-3.5 text-cyan-400" />
+                        <a href={mtg.teamsLink} target="_blank" rel="noreferrer" className="underline hover:text-cyan-300">
+                          {mtg.teamsLink}
+                        </a>
+                      </div>
+                    )}
                   </div>
 
                   <div className="meeting-card-footer">
@@ -370,93 +395,111 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
         </div>
       )}
 
-      {/* PROJECT COORDINATOR SPECIFIC: To-Do Tasks */}
-      {isPC && pcToDoTasks.length > 0 && (
-        <div className="glow-card p-5 mb-6 border-amber-500/30">
-          <div className="card-section-header">
-            <ArrowRightLeft className="w-5 h-5 text-amber-400" />
-            <h3>Project Coordinator To-Do Work Tasks ({pcToDoTasks.length})</h3>
-          </div>
-          <div className="space-y-3">
-            {pcToDoTasks.map(t => (
-              <div key={t.id} className="bg-slate-900/60 p-3 rounded-lg border border-amber-500/30 text-xs">
-                <div className="flex justify-between font-bold text-white mb-1">
-                  <span>{t.projectName} ({t.id})</span>
-                  <span className="text-amber-400">{t.requirement}</span>
-                </div>
-                <div className="text-slate-300">From: {t.workAlloter} ({t.fromDept})</div>
-                <div className="text-slate-400 mt-1">{t.hardwareDocInfo}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* EMPLOYEE ROSTER ACCESS CONTROL (STRICT USER MATRIX):
-          - CEO / PC: Can view roster when department selected
-          - TL / Sub-TL: Can view ONLY their own department members
-          - Normal Employee: CANNOT view any employee roster! */}
-      {isNormalEmp ? null : (!isSpecificDeptSelected && (isCEO || isPC)) ? (
-        <div className="glow-card p-6 text-center border-amber-500/30 my-4">
-          <Building className="w-10 h-10 text-amber-400 mx-auto mb-3 opacity-80" />
-          <h4 className="text-base font-bold text-white mb-1">Select a Department to View Employees & Leave Status</h4>
-          <p className="text-xs text-slate-400 max-w-md mx-auto mb-3">
-            Select a specific department from the navbar dropdown above to open its employee roster.
-          </p>
-          <div className="flex justify-center gap-2">
-            {['Hardware & Embedded Systems', 'Software & AI Systems', 'Inventory & Logistics', 'Project Management', 'Human Resources'].map(dept => (
-              <button
-                key={dept}
-                onClick={() => setSelectedDept(dept)}
-                className="btn-secondary btn-xs"
-              >
-                Open {dept}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        /* Render Employee Roster for CEO/PC when department selected, or TL for own team */
+      {/* DEPARTMENT-WISE EMPLOYEE ROSTER & TODAY ON LEAVE TAB SYSTEM */}
+      {!isNormalEmp && (
         <div className="glow-card p-5">
-          <div className="card-section-header justify-between">
+          <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-sky-400" />
-              <h3>Employee Roster & Leave Status — {isTL ? activeUser?.dept : selectedDept} ({visibleUsers.length})</h3>
+              <Users className="w-5 h-5 text-amber-400" />
+              <h3 className="text-md font-bold text-white">
+                {isPC && !isSpecificDeptSelected ? 'Project Management Team Members' : `Department Employee Roster (${selectedDept})`}
+              </h3>
             </div>
-            <span className="text-xs text-slate-400">Click employee for detailed profile modal</span>
+
+            {/* Sub-view Tab Switcher */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTabSubView('roster')}
+                className={`tab-btn ${activeTabSubView === 'roster' ? 'active' : ''}`}
+              >
+                <Users className="w-3.5 h-3.5" /> Employee Roster ({visibleUsers.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTabSubView('on_leave')}
+                className={`tab-btn ${activeTabSubView === 'on_leave' ? 'active' : ''}`}
+              >
+                <UserX className="w-3.5 h-3.5 text-rose-400" /> Today On Leave ({todayOnLeaveList.length})
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visibleUsers.map(emp => {
-              const stats = getEmployeeStats(emp.id);
-              return (
-                <div
-                  key={emp.id}
-                  onClick={() => setSelectedEmpModal(emp)}
-                  className="emp-roster-item justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <img src={emp.avatar} alt={emp.name} className="emp-avatar-sm" />
-                    <div>
-                      <div className="font-bold text-white text-xs">{emp.name}</div>
-                      <div className="text-[11px] text-slate-400">{emp.id} • {emp.role}</div>
-                      <div className="text-[11px] text-amber-400">{emp.dept}</div>
-                    </div>
-                  </div>
+          {/* Sub-view 1: Employee Cards Grid with Active, Accepted, Completed Counts */}
+          {activeTabSubView === 'roster' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visibleUsers.map(emp => {
+                const stats = getEmployeeDetailedStats(emp.id);
 
-                  <div className="text-right">
-                    <span className={`status-pill mb-1 ${stats.status === 'On Leave' ? 'pill-leave' : 'pill-active'}`}>
-                      {stats.status === 'On Leave' ? <UserX className="w-3 h-3 mr-1" /> : <UserCheck className="w-3 h-3 mr-1" />}
-                      {stats.status}
-                    </span>
-                    <div className="text-[11px] text-slate-300 font-mono">
-                      {stats.acceptedCount} Accepted Tasks
+                return (
+                  <div
+                    key={emp.id}
+                    onClick={() => setSelectedEmpModal(emp)}
+                    className="emp-roster-item justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img src={emp.avatar} alt={emp.name} className="emp-avatar-sm" />
+                      <div>
+                        <div className="font-bold text-white text-xs">{emp.name}</div>
+                        <div className="text-[11px] text-slate-400">{emp.id} • {emp.role}</div>
+                        <div className="text-[11px] text-amber-400">{emp.dept}</div>
+                      </div>
+                    </div>
+
+                    <div className="text-right text-[11px] space-y-1">
+                      <span className={`status-pill ${stats.isOnLeaveToday ? 'pill-leave' : 'pill-active'}`}>
+                        {stats.isOnLeaveToday ? 'On Leave' : 'Active Working'}
+                      </span>
+                      <div className="font-mono text-slate-300">
+                        <span className="text-amber-400">{stats.activeCount} Active</span> • <span className="text-cyan-400">{stats.acceptedCount} Accepted</span>
+                      </div>
+                      <div className="font-mono text-emerald-400">{stats.completedCount} Completed Tasks</div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Sub-view 2: Today On Leave List with Department Filter */}
+          {activeTabSubView === 'on_leave' && (
+            <div className="space-y-3">
+              <p className="text-xs text-slate-400 italic">Approved employees currently on leave for {selectedDept}:</p>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Employee Name</th>
+                      <th>Employee ID</th>
+                      <th>Department</th>
+                      <th>Leave Type</th>
+                      <th>Dates</th>
+                      <th>Purpose</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {todayOnLeaveList.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center py-4 text-slate-500 italic">No employees on leave today for {selectedDept}.</td>
+                      </tr>
+                    ) : (
+                      todayOnLeaveList.map(l => (
+                        <tr key={l.id}>
+                          <td className="font-bold text-white">{l.name}</td>
+                          <td className="font-mono text-cyan-400">{l.empId}</td>
+                          <td className="text-amber-400">{l.dept}</td>
+                          <td><span className="badge-tag bg-rose-500/20 text-rose-300">{l.leaveType}</span></td>
+                          <td className="font-mono text-xs">{l.fromTo}</td>
+                          <td className="text-slate-300">{l.purpose}</td>
+                          <td><span className="status-pill pill-leave">Approved On Leave</span></td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -477,7 +520,14 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                 <div><strong className="text-amber-400">Created By:</strong> {selectedMeetingModal.organizer} ({selectedMeetingModal.organizerId})</div>
                 <div><strong className="text-cyan-400">Day & Time:</strong> {selectedMeetingModal.date} at {selectedMeetingModal.time}</div>
                 <div><strong className="text-slate-300">Target Department:</strong> {selectedMeetingModal.targetDept}</div>
-                <div><strong className="text-slate-300">Status:</strong> {selectedMeetingModal.status}</div>
+                {selectedMeetingModal.teamsLink && (
+                  <div>
+                    <strong className="text-cyan-400">Imported Meeting URL:</strong>{' '}
+                    <a href={selectedMeetingModal.teamsLink} target="_blank" rel="noreferrer" className="underline text-cyan-300">
+                      {selectedMeetingModal.teamsLink}
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -485,15 +535,6 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                 <p className="bg-slate-900/40 p-3 rounded border border-slate-800 text-slate-300">
                   {selectedMeetingModal.agenda}
                 </p>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-slate-200 mb-1">Participants:</h4>
-                <div className="flex flex-wrap gap-1">
-                  {selectedMeetingModal.participants?.map(p => (
-                    <span key={p} className="badge-tag bg-slate-800 text-cyan-300">{p}</span>
-                  ))}
-                </div>
               </div>
             </div>
 
@@ -506,63 +547,95 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
         </div>
       )}
 
-      {/* Interactive Employee Profile Details Modal */}
+      {/* DETAILED EMPLOYEE PROFILE DRAWER MODAL (REQUIREMENT 5.8) */}
       {selectedEmpModal && (
         <div className="modal-backdrop">
-          <div className="modal-content glow-card emp-detail-modal">
+          <div className="modal-content glow-card emp-detail-modal max-w-2xl">
             <div className="modal-header">
               <div className="flex items-center gap-3">
                 <img src={selectedEmpModal.avatar} alt={selectedEmpModal.name} className="w-12 h-12 rounded-full border-2 border-amber-400/50" />
                 <div>
                   <h3 className="text-lg font-bold text-white">{selectedEmpModal.name}</h3>
-                  <span className="text-xs text-amber-400 font-mono">ID: {selectedEmpModal.id} • {selectedEmpModal.role}</span>
+                  <span className="text-xs text-amber-400 font-mono">ID: {selectedEmpModal.id} • {selectedEmpModal.role} ({selectedEmpModal.dept})</span>
                 </div>
               </div>
               <button onClick={() => setSelectedEmpModal(null)} className="icon-btn-ghost">✕</button>
             </div>
 
-            <div className="modal-body space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-400 block text-xs">Department</span>
-                  <span className="text-white font-medium">{selectedEmpModal.dept}</span>
-                </div>
-                <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-400 block text-xs">Email Address</span>
-                  <span className="text-white font-medium">{selectedEmpModal.email}</span>
-                </div>
-              </div>
-
-              {/* Employee Detailed Work Stats */}
+            <div className="modal-body space-y-4 text-xs">
               {(() => {
-                const stats = getEmployeeStats(selectedEmpModal.id);
-                const empLeaves = leavesList.filter(l => l.empId === selectedEmpModal.id);
+                const stats = getEmployeeDetailedStats(selectedEmpModal.id);
+
                 return (
                   <>
+                    {/* Performance Summary Metrics */}
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg">
-                        <span className="text-xl font-bold text-amber-400 block">{stats.acceptedCount}</span>
-                        <span className="text-xs text-slate-300">Accepted Tasks</span>
+                        <span className="text-lg font-bold text-amber-400 block">{stats.acceptedCount}</span>
+                        <span className="text-[11px] text-slate-300">Current Accepted Tasks</span>
                       </div>
                       <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-lg">
-                        <span className="text-xl font-bold text-emerald-400 block">{stats.completedCount}</span>
-                        <span className="text-xs text-slate-300">Completed Tasks</span>
+                        <span className="text-lg font-bold text-emerald-400 block">{stats.completedCount}</span>
+                        <span className="text-[11px] text-slate-300">Total Completed Tasks</span>
                       </div>
-                      <div className="bg-purple-500/10 border border-purple-500/30 p-3 rounded-lg">
-                        <span className="text-xl font-bold text-purple-400 block">{stats.totalLeaves}</span>
-                        <span className="text-xs text-slate-300">Total Leaves</span>
+                      <div className="bg-cyan-500/10 border border-cyan-500/30 p-3 rounded-lg">
+                        <span className="text-lg font-bold text-cyan-400 block">{stats.pastWeekCompletedCount}</span>
+                        <span className="text-[11px] text-slate-300">Past 1-Week Completed</span>
                       </div>
                     </div>
 
+                    {/* SECTION 1: Current Working / Accepted Tasks */}
                     <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-slate-300">Leave History for {selectedEmpModal.name}</h4>
-                      {empLeaves.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic">No leaves recorded for this employee.</p>
+                      <h4 className="font-bold text-amber-400 flex items-center gap-1">
+                        <ArrowRightLeft className="w-4 h-4" /> SECTION 1: Current Working / Accepted Tasks ({stats.acceptedTasksList.length})
+                      </h4>
+                      {stats.acceptedTasksList.length === 0 ? (
+                        <p className="text-slate-500 italic bg-slate-900/40 p-2 rounded">No current active tasks.</p>
                       ) : (
-                        empLeaves.map(l => (
-                          <div key={l.id} className="text-xs bg-slate-900/40 p-2 rounded flex justify-between">
-                            <span>{l.leaveType} ({l.noOfDays} days): {l.purpose}</span>
-                            <span className="font-semibold text-amber-400">{l.status}</span>
+                        stats.acceptedTasksList.map(t => (
+                          <div key={t.id} className="bg-slate-900/60 p-2 rounded border border-amber-500/30">
+                            <div className="font-bold text-white">{t.projectName} ({t.id})</div>
+                            <div className="text-slate-400">Allotted by: {t.workAlloter} ({t.fromDept})</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* SECTION 2: Completed Tasks */}
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-emerald-400 flex items-center gap-1">
+                        <Check className="w-4 h-4" /> SECTION 2: Completed Tasks ({stats.completedTasksList.length})
+                      </h4>
+                      {stats.completedTasksList.length === 0 ? (
+                        <p className="text-slate-500 italic bg-slate-900/40 p-2 rounded">No completed tasks recorded.</p>
+                      ) : (
+                        stats.completedTasksList.map(t => (
+                          <div key={t.id} className="bg-slate-900/60 p-2 rounded border border-emerald-500/30 flex justify-between">
+                            <div>
+                              <div className="font-bold text-white">{t.projectName}</div>
+                              <div className="text-slate-400">Done: {t.completedDate}</div>
+                            </div>
+                            <span className="text-emerald-400 font-mono font-bold">Completed ✅</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* SECTION 3: Upcoming / Pending Approved Leaves */}
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-purple-400 flex items-center gap-1">
+                        <CalendarCheck className="w-4 h-4" /> SECTION 3: Employee Leave Status & Upcoming Leaves
+                      </h4>
+                      {stats.upcomingLeaves.length === 0 ? (
+                        <p className="text-slate-500 italic bg-slate-900/40 p-2 rounded">No upcoming leave applications for this employee.</p>
+                      ) : (
+                        stats.upcomingLeaves.map(l => (
+                          <div key={l.id} className="bg-slate-900/60 p-2 rounded border border-purple-500/30 flex justify-between">
+                            <div>
+                              <div className="font-bold text-white">{l.leaveType} ({l.noOfDays} days): {l.purpose}</div>
+                              <div className="text-slate-400">Dates: {l.fromTo}</div>
+                            </div>
+                            <span className="text-amber-400 font-bold">{l.status}</span>
                           </div>
                         ))
                       )}
@@ -574,7 +647,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
             <div className="modal-footer">
               <button onClick={() => setSelectedEmpModal(null)} className="btn-gold w-full">
-                Close Detailed View
+                Close Profile Drawer
               </button>
             </div>
           </div>
