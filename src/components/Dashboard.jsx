@@ -5,9 +5,7 @@ import {
   Users,
   CalendarCheck,
   ArrowRightLeft,
-  Award,
   Building,
-  UserCheck,
   UserX,
   Sparkles,
   Calendar,
@@ -16,7 +14,6 @@ import {
   Video,
   ChevronRight,
   User,
-  ArrowLeft,
   Link,
   Check,
   Home
@@ -70,7 +67,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
         const structuredAlertContent = (
           <div className="space-y-3 my-2">
-            <p className="text-xs text-slate-300">You have {meetingsList.length} upcoming scheduled meetings:</p>
+            <p className="text-xs" style={{ color: 'var(--text-2)' }}>You have {meetingsList.length} upcoming scheduled meetings:</p>
             <div className="space-y-2 max-h-56 overflow-y-auto">
               {meetingsList.map(m => (
                 <div key={m.id} className="meeting-alert-card">
@@ -78,7 +75,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   <div className="meeting-alert-time">📅 {m.date} @ {m.time}</div>
                   <div className="meeting-alert-by">Organized by {m.organizer} ({m.targetDept})</div>
                   {m.teamsLink && (
-                    <div className="text-[11px] text-cyan-400 font-mono flex items-center gap-1 mt-1">
+                    <div className="font-mono flex items-center gap-1 mt-1" style={{ fontSize: '11px', color: 'var(--cyan)' }}>
                       <Link className="w-3 h-3" /> {m.teamsLink}
                     </div>
                   )}
@@ -189,12 +186,15 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
     });
   };
 
+  /* ── reusable inline label style ──────────────────────── */
+  const fLabel = { color: 'var(--text-3)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 };
+
   return (
     <div className="portal-page-container">
       {/* Return to Primary Home Dashboard Button (When viewing another department) */}
       {isViewingOtherDept && (
         <button onClick={() => setSelectedDept(activeUser?.dept)} className="nav-back-symbol-btn">
-          <Home className="w-4 h-4 text-amber-400" />
+          <Home className="w-4 h-4" style={{ color: 'var(--amber)' }} />
           <span>← Return to My Home Dashboard ({activeUser?.dept})</span>
         </button>
       )}
@@ -203,7 +203,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       <div className="dash-hero-card glow-card">
         <div className="dash-hero-content">
           <div className="hero-badge">
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <Sparkles className="w-4 h-4" style={{ color: 'var(--amber)' }} />
             <span>Role Console: {activeUser?.role} ({selectedDept})</span>
           </div>
           <h2 className="hero-title">
@@ -221,7 +221,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       {/* KPI Metric Summary Cards */}
       <div className="metrics-grid">
         <div className="metric-card glow-card" onClick={() => onNavigate('leaves')}>
-          <div className="metric-icon-box bg-gold-500/10 text-amber-400">
+          <div className="metric-icon-box" style={{ background: 'rgba(236,201,75,0.10)', color: 'var(--amber)' }}>
             <CalendarCheck className="w-6 h-6" />
           </div>
           <div className="metric-info">
@@ -232,7 +232,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
         </div>
 
         <div className="metric-card glow-card" onClick={() => onNavigate('work_transfer')}>
-          <div className="metric-icon-box bg-emerald-500/10 text-emerald-400">
+          <div className="metric-icon-box" style={{ background: 'rgba(72,187,120,0.10)', color: 'var(--emerald)' }}>
             <ArrowRightLeft className="w-6 h-6" />
           </div>
           <div className="metric-info">
@@ -243,7 +243,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
         </div>
 
         <div className="metric-card glow-card">
-          <div className="metric-icon-box bg-purple-500/10 text-purple-400">
+          <div className="metric-icon-box" style={{ background: 'rgba(183,148,244,0.10)', color: 'var(--purple)' }}>
             <Users className="w-6 h-6" />
           </div>
           <div className="metric-info">
@@ -256,11 +256,11 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
       {/* SCHEDULED MEETINGS SECTION (EXPLICIT USER INCLUSION FILTERING) */}
       {shouldShowMeetingsSection && (
-        <div className="glow-card p-5 mb-6 border-cyan-500/30">
+        <div className="glow-card p-5 mb-6" style={{ borderColor: 'rgba(79,209,199,0.25)' }}>
           <div className="card-section-header justify-between">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-cyan-400" />
-              <h3>📅 Upcoming Scheduled Meetings & Syncs ({filteredMeetings.length})</h3>
+              <Calendar className="w-5 h-5" style={{ color: 'var(--cyan)' }} />
+              <h3>📅 Upcoming Scheduled Meetings &amp; Syncs ({filteredMeetings.length})</h3>
             </div>
             {(isCEO || isPC || isTL || isPMTeam) && (
               <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-gold btn-xs">
@@ -275,7 +275,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
               <h4>🗓️ Schedule / Import MS Teams / Meeting Link</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs mb-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Meeting Title *</label>
+                  <label style={fLabel}>Meeting Title *</label>
                   <input
                     type="text"
                     placeholder="e.g. Q3 Hardware Integration Sync"
@@ -285,20 +285,20 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">Target Department</label>
+                  <label style={fLabel}>Target Department</label>
                   <select
                     value={meetingFormData.targetDept}
                     onChange={e => setMeetingFormData({ ...meetingFormData, targetDept: e.target.value })}
                   >
-                    <option value="Hardware & Embedded Systems">Hardware & Embedded Systems</option>
-                    <option value="Software & AI Systems">Software & AI Systems</option>
-                    <option value="Inventory & Logistics">Inventory & Logistics</option>
+                    <option value="Hardware & Embedded Systems">Hardware &amp; Embedded Systems</option>
+                    <option value="Software & AI Systems">Software &amp; AI Systems</option>
+                    <option value="Inventory & Logistics">Inventory &amp; Logistics</option>
                     <option value="Project Management">Project Management</option>
                     <option value="Human Resources">Human Resources</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">Meeting Date & Time *</label>
+                  <label style={fLabel}>Meeting Date &amp; Time *</label>
                   <div className="flex gap-1">
                     <input
                       type="date"
@@ -316,7 +316,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   </div>
                 </div>
                 <div className="md:col-span-3">
-                  <label className="text-cyan-400 block mb-1 flex items-center gap-1">
+                  <label style={{ ...fLabel, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Link className="w-3.5 h-3.5" /> MS Teams / Google Meet Link (Paste / Import Link)
                   </label>
                   <input
@@ -327,7 +327,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   />
                 </div>
                 <div className="md:col-span-3">
-                  <label className="text-slate-400 block mb-1">Agenda & Brief *</label>
+                  <label style={fLabel}>Agenda &amp; Brief *</label>
                   <textarea
                     placeholder="Enter meeting agenda..."
                     value={meetingFormData.agenda}
@@ -347,13 +347,15 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           {/* Clean Redesigned Meetings Cards Grid */}
           <div className="meetings-grid-container">
             {filteredMeetings.length === 0 ? (
-              <p className="text-xs text-slate-500 italic col-span-full">No upcoming meetings scheduled where you are included.</p>
+              <p className="text-xs italic col-span-full" style={{ color: 'var(--text-4)' }}>
+                No upcoming meetings scheduled where you are included.
+              </p>
             ) : (
               filteredMeetings.map(mtg => (
                 <div key={mtg.id} className="meeting-card-item">
                   <div className="meeting-card-header">
                     <div className="flex items-start gap-2">
-                      <Video className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                      <Video className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'var(--cyan)' }} />
                       <div className="meeting-title-text">{mtg.title}</div>
                     </div>
                     <span className="meeting-dept-badge">{mtg.targetDept}</span>
@@ -361,21 +363,26 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
                   <div className="meeting-meta-row">
                     <div className="meta-item">
-                      <User className="w-3.5 h-3.5 text-amber-400" />
+                      <User className="w-3.5 h-3.5" style={{ color: 'var(--amber)' }} />
                       <span className="meta-label">Created By:</span>
                       <span className="meta-val-gold">{mtg.organizer}</span>
                     </div>
 
                     <div className="meta-item">
-                      <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                      <span className="meta-label">Date & Time:</span>
+                      <Clock className="w-3.5 h-3.5" style={{ color: 'var(--cyan)' }} />
+                      <span className="meta-label">Date &amp; Time:</span>
                       <span className="meta-val-time">{mtg.date} @ {mtg.time}</span>
                     </div>
 
                     {mtg.teamsLink && (
-                      <div className="meta-item text-xs text-cyan-400 font-mono truncate" title={mtg.teamsLink}>
-                        <Link className="w-3.5 h-3.5 text-cyan-400" />
-                        <a href={mtg.teamsLink} target="_blank" rel="noreferrer" className="underline hover:text-cyan-300">
+                      <div className="meta-item font-mono truncate" style={{ fontSize: '0.75rem', color: 'var(--cyan)' }} title={mtg.teamsLink}>
+                        <Link className="w-3.5 h-3.5" style={{ color: 'var(--cyan)' }} />
+                        <a
+                          href={mtg.teamsLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: 'var(--cyan)', textDecoration: 'underline' }}
+                        >
                           {mtg.teamsLink}
                         </a>
                       </div>
@@ -383,7 +390,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   </div>
 
                   <div className="meeting-card-footer">
-                    <span className="text-[11px] text-slate-400 font-mono">ID: {mtg.id}</span>
+                    <span className="font-mono" style={{ fontSize: '11px', color: 'var(--text-3)' }}>ID: {mtg.id}</span>
                     <button onClick={() => setSelectedMeetingModal(mtg)} className="btn-view-meeting">
                       <span>View Details</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -399,10 +406,10 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       {/* DEPARTMENT-WISE EMPLOYEE ROSTER & TODAY ON LEAVE TAB SYSTEM */}
       {!isNormalEmp && (
         <div className="glow-card p-5">
-          <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+          <div className="flex justify-between items-center mb-4 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-amber-400" />
-              <h3 className="text-md font-bold text-white">
+              <Users className="w-5 h-5" style={{ color: 'var(--amber)' }} />
+              <h3 className="text-md font-bold" style={{ color: 'var(--text-1)' }}>
                 Department Employee Roster ({selectedDept})
               </h3>
             </div>
@@ -420,7 +427,8 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                 onClick={() => setActiveTabSubView('on_leave')}
                 className={`tab-btn ${activeTabSubView === 'on_leave' ? 'active' : ''}`}
               >
-                <UserX className="w-3.5 h-3.5 text-rose-400" /> Today On Leave ({todayOnLeaveList.length})
+                <UserX className="w-3.5 h-3.5" style={{ color: activeTabSubView === 'on_leave' ? 'white' : 'var(--rose)' }} />
+                Today On Leave ({todayOnLeaveList.length})
               </button>
             </div>
           </div>
@@ -440,20 +448,22 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                     <div className="flex items-center gap-3">
                       <img src={emp.avatar} alt={emp.name} className="emp-avatar-sm" />
                       <div>
-                        <div className="font-bold text-white text-xs">{emp.name}</div>
-                        <div className="text-[11px] text-slate-400">{emp.id} • {emp.role}</div>
-                        <div className="text-[11px] text-amber-400">{emp.dept}</div>
+                        <div className="font-bold text-xs" style={{ color: 'var(--text-1)' }}>{emp.name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{emp.id} • {emp.role}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--amber)' }}>{emp.dept}</div>
                       </div>
                     </div>
 
-                    <div className="text-right text-[11px] space-y-1">
+                    <div className="text-right space-y-1" style={{ fontSize: '11px' }}>
                       <span className={`status-pill ${stats.isOnLeaveToday ? 'pill-leave' : 'pill-active'}`}>
                         {stats.isOnLeaveToday ? 'On Leave' : 'Active Working'}
                       </span>
-                      <div className="font-mono text-slate-300">
-                        <span className="text-amber-400">{stats.activeCount} Active</span> • <span className="text-cyan-400">{stats.acceptedCount} Accepted</span>
+                      <div className="font-mono" style={{ color: 'var(--text-2)' }}>
+                        <span style={{ color: 'var(--amber)' }}>{stats.activeCount} Active</span>
+                        {' • '}
+                        <span style={{ color: 'var(--cyan)' }}>{stats.acceptedCount} Accepted</span>
                       </div>
-                      <div className="font-mono text-emerald-400">{stats.completedCount} Completed Tasks</div>
+                      <div className="font-mono" style={{ color: 'var(--emerald)' }}>{stats.completedCount} Completed Tasks</div>
                     </div>
                   </div>
                 );
@@ -464,7 +474,9 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           {/* Sub-view 2: Today On Leave List */}
           {activeTabSubView === 'on_leave' && (
             <div className="space-y-3">
-              <p className="text-xs text-slate-400 italic">Approved employees currently on leave for {selectedDept}:</p>
+              <p className="text-xs italic" style={{ color: 'var(--text-3)' }}>
+                Approved employees currently on leave for {selectedDept}:
+              </p>
               <div className="table-responsive">
                 <table className="data-table">
                   <thead>
@@ -481,17 +493,26 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   <tbody>
                     {todayOnLeaveList.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center py-4 text-slate-500 italic">No employees on leave today for {selectedDept}.</td>
+                        <td colSpan="7" className="text-center py-4 italic" style={{ color: 'var(--text-4)' }}>
+                          No employees on leave today for {selectedDept}.
+                        </td>
                       </tr>
                     ) : (
                       todayOnLeaveList.map(l => (
                         <tr key={l.id}>
-                          <td className="font-bold text-white">{l.name}</td>
-                          <td className="font-mono text-cyan-400">{l.empId}</td>
-                          <td className="text-amber-400">{l.dept}</td>
-                          <td><span className="badge-tag bg-rose-500/20 text-rose-300">{l.leaveType}</span></td>
+                          <td className="font-bold" style={{ color: 'var(--text-1)' }}>{l.name}</td>
+                          <td className="font-mono" style={{ color: 'var(--cyan)' }}>{l.empId}</td>
+                          <td style={{ color: 'var(--amber)' }}>{l.dept}</td>
+                          <td>
+                            <span
+                              className="badge-tag"
+                              style={{ background: 'rgba(252,129,129,0.15)', color: 'var(--rose)', border: '1px solid rgba(252,129,129,0.25)' }}
+                            >
+                              {l.leaveType}
+                            </span>
+                          </td>
                           <td className="font-mono text-xs">{l.fromTo}</td>
-                          <td className="text-slate-300">{l.purpose}</td>
+                          <td style={{ color: 'var(--text-2)' }}>{l.purpose}</td>
                           <td><span className="status-pill pill-leave">Approved On Leave</span></td>
                         </tr>
                       ))
@@ -510,21 +531,21 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           <div className="modal-content glow-card">
             <div className="modal-header">
               <div className="flex items-center gap-2">
-                <Video className="w-6 h-6 text-cyan-400" />
-                <h3 className="text-lg font-bold text-white">{selectedMeetingModal.title}</h3>
+                <Video className="w-6 h-6" style={{ color: 'var(--cyan)' }} />
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>{selectedMeetingModal.title}</h3>
               </div>
               <button onClick={() => setSelectedMeetingModal(null)} className="icon-btn-ghost">✕</button>
             </div>
 
             <div className="modal-body space-y-3 text-xs">
               <div className="settings-field-box space-y-2">
-                <div><strong style={{color:'var(--amber)'}}>Created By:</strong> {selectedMeetingModal.organizer} ({selectedMeetingModal.organizerId})</div>
-                <div><strong style={{color:'var(--blue)'}}>Day &amp; Time:</strong> {selectedMeetingModal.date} at {selectedMeetingModal.time}</div>
-                <div><strong style={{color:'var(--text-2)'}}>Target Department:</strong> {selectedMeetingModal.targetDept}</div>
+                <div><strong style={{ color: 'var(--amber)' }}>Created By:</strong> {selectedMeetingModal.organizer} ({selectedMeetingModal.organizerId})</div>
+                <div><strong style={{ color: 'var(--blue)' }}>Day &amp; Time:</strong> {selectedMeetingModal.date} at {selectedMeetingModal.time}</div>
+                <div><strong style={{ color: 'var(--text-2)' }}>Target Department:</strong> {selectedMeetingModal.targetDept}</div>
                 {selectedMeetingModal.teamsLink && (
                   <div>
-                    <strong style={{color:'var(--blue)'}}>Meeting URL:</strong>{' '}
-                    <a href={selectedMeetingModal.teamsLink} target="_blank" rel="noreferrer" style={{color:'var(--blue)', textDecoration:'underline'}}>
+                    <strong style={{ color: 'var(--blue)' }}>Meeting URL:</strong>{' '}
+                    <a href={selectedMeetingModal.teamsLink} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', textDecoration: 'underline' }}>
                       {selectedMeetingModal.teamsLink}
                     </a>
                   </div>
@@ -532,8 +553,8 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
               </div>
 
               <div>
-                <h4 style={{fontWeight:700, color:'var(--text-2)', marginBottom:'8px'}}>Agenda &amp; Meeting Brief:</h4>
-                <p className="settings-field-box" style={{color:'var(--text-2)'}}>
+                <h4 style={{ fontWeight: 700, color: 'var(--text-2)', marginBottom: '8px' }}>Agenda &amp; Meeting Brief:</h4>
+                <p className="settings-field-box" style={{ color: 'var(--text-2)' }}>
                   {selectedMeetingModal.agenda}
                 </p>
               </div>
@@ -554,10 +575,17 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           <div className="modal-content glow-card emp-detail-modal max-w-2xl">
             <div className="modal-header">
               <div className="flex items-center gap-3">
-                <img src={selectedEmpModal.avatar} alt={selectedEmpModal.name} className="w-12 h-12 rounded-full border-2 border-amber-400/50" />
+                <img
+                  src={selectedEmpModal.avatar}
+                  alt={selectedEmpModal.name}
+                  className="w-12 h-12 rounded-full"
+                  style={{ border: '2px solid rgba(236,201,75,0.50)' }}
+                />
                 <div>
-                  <h3 className="text-lg font-bold text-white">{selectedEmpModal.name}</h3>
-                  <span className="text-xs text-amber-400 font-mono">ID: {selectedEmpModal.id} • {selectedEmpModal.role} ({selectedEmpModal.dept})</span>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>{selectedEmpModal.name}</h3>
+                  <span className="text-xs font-mono" style={{ color: 'var(--amber)' }}>
+                    ID: {selectedEmpModal.id} • {selectedEmpModal.role} ({selectedEmpModal.dept})
+                  </span>
                 </div>
               </div>
               <button onClick={() => setSelectedEmpModal(null)} className="icon-btn-ghost">✕</button>
@@ -570,69 +598,71 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                 return (
                   <>
                     <div className="grid grid-cols-3 gap-3 text-center">
-                      <div style={{background:'rgba(236,201,75,0.08)', border:'1px solid rgba(236,201,75,0.20)', padding:'14px', borderRadius:'var(--r-md)'}}>
-                        <span style={{fontSize:'1.3rem', fontWeight:800, color:'var(--amber)', display:'block'}}>{stats.acceptedCount}</span>
-                        <span style={{fontSize:'0.70rem', color:'var(--text-3)'}}>Accepted Tasks</span>
+                      <div style={{ background: 'rgba(236,201,75,0.08)', border: '1px solid rgba(236,201,75,0.20)', padding: '14px', borderRadius: 'var(--r-md)' }}>
+                        <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--amber)', display: 'block' }}>{stats.acceptedCount}</span>
+                        <span style={{ fontSize: '0.70rem', color: 'var(--text-3)' }}>Accepted Tasks</span>
                       </div>
-                      <div style={{background:'rgba(72,187,120,0.08)', border:'1px solid rgba(72,187,120,0.20)', padding:'14px', borderRadius:'var(--r-md)'}}>
-                        <span style={{fontSize:'1.3rem', fontWeight:800, color:'var(--emerald)', display:'block'}}>{stats.completedCount}</span>
-                        <span style={{fontSize:'0.70rem', color:'var(--text-3)'}}>Total Completed</span>
+                      <div style={{ background: 'rgba(72,187,120,0.08)', border: '1px solid rgba(72,187,120,0.20)', padding: '14px', borderRadius: 'var(--r-md)' }}>
+                        <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--emerald)', display: 'block' }}>{stats.completedCount}</span>
+                        <span style={{ fontSize: '0.70rem', color: 'var(--text-3)' }}>Total Completed</span>
                       </div>
-                      <div style={{background:'rgba(99,179,237,0.08)', border:'1px solid rgba(99,179,237,0.20)', padding:'14px', borderRadius:'var(--r-md)'}}>
-                        <span style={{fontSize:'1.3rem', fontWeight:800, color:'var(--blue)', display:'block'}}>{stats.pastWeekCompletedCount}</span>
-                        <span style={{fontSize:'0.70rem', color:'var(--text-3)'}}>Past 7 Days</span>
+                      <div style={{ background: 'rgba(99,179,237,0.08)', border: '1px solid rgba(99,179,237,0.20)', padding: '14px', borderRadius: 'var(--r-md)' }}>
+                        <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--blue)', display: 'block' }}>{stats.pastWeekCompletedCount}</span>
+                        <span style={{ fontSize: '0.70rem', color: 'var(--text-3)' }}>Past 7 Days</span>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <h4 style={{fontWeight:700, color:'var(--amber)', display:'flex', alignItems:'center', gap:'6px', fontSize:'0.82rem'}}>
-                        <ArrowRightLeft style={{width:'14px', height:'14px'}} /> Current / Accepted Tasks ({stats.acceptedTasksList.length})
+                      <h4 style={{ fontWeight: 700, color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
+                        <ArrowRightLeft style={{ width: '14px', height: '14px' }} /> Current / Accepted Tasks ({stats.acceptedTasksList.length})
                       </h4>
                       {stats.acceptedTasksList.length === 0 ? (
-                        <p className="settings-field-box" style={{color:'var(--text-3)', fontStyle:'italic'}}>No current active tasks.</p>
+                        <p className="settings-field-box" style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>No current active tasks.</p>
                       ) : (
                         stats.acceptedTasksList.map(t => (
                           <div key={t.id} className="settings-field-box">
-                            <div style={{fontWeight:700, color:'var(--text-1)', marginBottom:'2px'}}>{t.projectName} <span style={{color:'var(--text-3)', fontWeight:400}}>({t.id})</span></div>
-                            <div style={{color:'var(--text-3)', fontSize:'0.75rem'}}>Allotted by: {t.workAlloter} ({t.fromDept})</div>
+                            <div style={{ fontWeight: 700, color: 'var(--text-1)', marginBottom: '2px' }}>
+                              {t.projectName} <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>({t.id})</span>
+                            </div>
+                            <div style={{ color: 'var(--text-3)', fontSize: '0.75rem' }}>Allotted by: {t.workAlloter} ({t.fromDept})</div>
                           </div>
                         ))
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <h4 style={{fontWeight:700, color:'var(--emerald)', display:'flex', alignItems:'center', gap:'6px', fontSize:'0.82rem'}}>
-                        <Check style={{width:'14px', height:'14px'}} /> Completed Tasks ({stats.completedTasksList.length})
+                      <h4 style={{ fontWeight: 700, color: 'var(--emerald)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
+                        <Check style={{ width: '14px', height: '14px' }} /> Completed Tasks ({stats.completedTasksList.length})
                       </h4>
                       {stats.completedTasksList.length === 0 ? (
-                        <p className="settings-field-box" style={{color:'var(--text-3)', fontStyle:'italic'}}>No completed tasks recorded.</p>
+                        <p className="settings-field-box" style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>No completed tasks recorded.</p>
                       ) : (
                         stats.completedTasksList.map(t => (
-                          <div key={t.id} className="settings-field-box" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                          <div key={t.id} className="settings-field-box" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <div style={{fontWeight:700, color:'var(--text-1)'}}>{t.projectName}</div>
-                              <div style={{color:'var(--text-3)', fontSize:'0.75rem'}}>Done: {t.completedDate}</div>
+                              <div style={{ fontWeight: 700, color: 'var(--text-1)' }}>{t.projectName}</div>
+                              <div style={{ color: 'var(--text-3)', fontSize: '0.75rem' }}>Done: {t.completedDate}</div>
                             </div>
-                            <span style={{color:'var(--emerald)', fontWeight:700, fontSize:'0.75rem'}}>✓ Completed</span>
+                            <span style={{ color: 'var(--emerald)', fontWeight: 700, fontSize: '0.75rem' }}>✓ Completed</span>
                           </div>
                         ))
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <h4 style={{fontWeight:700, color:'var(--purple)', display:'flex', alignItems:'center', gap:'6px', fontSize:'0.82rem'}}>
-                        <CalendarCheck style={{width:'14px', height:'14px'}} /> Leave Status &amp; Upcoming Leaves
+                      <h4 style={{ fontWeight: 700, color: 'var(--purple)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
+                        <CalendarCheck style={{ width: '14px', height: '14px' }} /> Leave Status &amp; Upcoming Leaves
                       </h4>
                       {stats.upcomingLeaves.length === 0 ? (
-                        <p className="settings-field-box" style={{color:'var(--text-3)', fontStyle:'italic'}}>No upcoming leave applications.</p>
+                        <p className="settings-field-box" style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>No upcoming leave applications.</p>
                       ) : (
                         stats.upcomingLeaves.map(l => (
-                          <div key={l.id} className="settings-field-box" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                          <div key={l.id} className="settings-field-box" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <div style={{fontWeight:700, color:'var(--text-1)'}}>{l.leaveType} ({l.noOfDays} days): {l.purpose}</div>
-                              <div style={{color:'var(--text-3)', fontSize:'0.75rem'}}>Dates: {l.fromTo}</div>
+                              <div style={{ fontWeight: 700, color: 'var(--text-1)' }}>{l.leaveType} ({l.noOfDays} days): {l.purpose}</div>
+                              <div style={{ color: 'var(--text-3)', fontSize: '0.75rem' }}>Dates: {l.fromTo}</div>
                             </div>
-                            <span style={{color:'var(--amber)', fontWeight:700, fontSize:'0.75rem'}}>{l.status}</span>
+                            <span style={{ color: 'var(--amber)', fontWeight: 700, fontSize: '0.75rem' }}>{l.status}</span>
                           </div>
                         ))
                       )}
