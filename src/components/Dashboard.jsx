@@ -17,7 +17,10 @@ import {
   Link,
   Check,
   Home,
-  Trash2
+  Trash2,
+  Bell,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 
 export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigate }) => {
@@ -59,6 +62,20 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
     window.addEventListener('mra_db_updated', fetchData);
     return () => window.removeEventListener('mra_db_updated', fetchData);
   }, []);
+
+  useEffect(() => {
+    const handleOpenMeeting = (e) => {
+      const mtgId = e.detail?.meetingId;
+      if (mtgId) {
+        const found = meetingsList.find(m => m.id === mtgId);
+        if (found) {
+          setSelectedMeetingModal(found);
+        }
+      }
+    };
+    window.addEventListener('mra_open_meeting', handleOpenMeeting);
+    return () => window.removeEventListener('mra_open_meeting', handleOpenMeeting);
+  }, [meetingsList]);
 
   useEffect(() => {
     if ((isCEO || isPC || isTL || isPMTeam) && meetingsList.length > 0) {
@@ -133,6 +150,73 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
   const shouldShowMeetingsSection = (isCEO || isPC || isTL || isPMTeam || filteredMeetings.length > 0);
 
   const todayOnLeaveList = leavesList.filter(l => l.status === 'Approved' && filterByDept(l.dept));
+
+  // LIVE DASHBOARD NOTIFICATIONS & ACTION REMINDERS
+  const dashboardNotifications = [];
+
+  // 1. Meeting Reminders
+  filteredMeetings.forEach(mtg => {
+    dashboardNotifications.push({
+      id: `mtg-1h-${mtg.id}`,
+      type: 'meeting',
+      urgency: 'normal',
+      icon: '⏰',
+      badge: '1h Reminder',
+      title: mtg.title,
+      timeInfo: `${mtg.date} @ ${mtg.time}`,
+      details: `Scheduled with ${mtg.targetDept} · Host: ${mtg.organizer}`,
+      actionLabel: 'View Meeting Details',
+      meeting: mtg
+    });
+    dashboardNotifications.push({
+      id: `mtg-30m-${mtg.id}`,
+      type: 'meeting',
+      urgency: 'urgent',
+      icon: '⚡',
+      badge: '30m Alert',
+      title: mtg.title,
+      timeInfo: `Starting soon at ${mtg.time}`,
+      details: `Organized by ${mtg.organizer} (${mtg.targetDept})`,
+      actionLabel: 'Join / Details',
+      meeting: mtg
+    });
+  });
+
+  // 2. Pending Leaves requiring approval
+  if (isCEO || isHR || isTL) {
+    const pendingLeaves = filteredLeaves.filter(l => l.status === 'Pending');
+    pendingLeaves.forEach(l => {
+      dashboardNotifications.push({
+        id: `leave-${l.id}`,
+        type: 'leave',
+        urgency: 'action',
+        icon: '📋',
+        badge: 'Leave Approval',
+        title: `${l.name} (${l.dept})`,
+        timeInfo: `${l.noOfDays} Day(s) • ${l.leaveType}`,
+        details: `Reason: ${l.purpose} [${l.fromTo}]`,
+        actionLabel: 'Review in Leave Portal',
+        onAction: () => onNavigate('leaves')
+      });
+    });
+  }
+
+  // 3. Work tasks pending acceptance or in-progress
+  const myPendingTasks = filteredWorkLogs.filter(w => (w.receiverEmpId === activeUser?.id || w.assignedToId === activeUser?.id) && !w.status.includes('Completed'));
+  myPendingTasks.forEach(w => {
+    dashboardNotifications.push({
+      id: `work-${w.id}`,
+      type: 'work',
+      urgency: 'normal',
+      icon: '💼',
+      badge: 'Work Task',
+      title: w.projectName,
+      timeInfo: `Status: ${w.status}`,
+      details: `Assigned by ${w.workAlloter} (${w.fromDept})`,
+      actionLabel: 'Open Task in Work Transfer',
+      onAction: () => onNavigate('work_transfer')
+    });
+  });
 
   const getEmployeeDetailedStats = (empId) => {
     const activeTasks = workLogsList.filter(w => w.receiverEmpId === empId && w.status === 'Pending Acceptance');
@@ -269,13 +353,87 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
         </div>
       </div>
 
-      {/* SCHEDULED MEETINGS SECTION (EXPLICIT USER INCLUSION FILTERING) */}
+      {/* 1. LIVE NOTIFICATIONS & ACTION REMINDERS ON DASHBOARD */}
+      <div className="glow-card p-5 mb-6 dashboard-notif-section">
+        <div className="card-section-header">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5" style={{ color: 'var(--amber)' }} />
+            <div>
+              <h3 className="text-md font-bold" style={{ color: 'var(--text-1)' }}>
+                Notifications &amp; Schedule Reminders ({dashboardNotifications.length})
+              </h3>
+              <p className="text-xs" style={{ color: 'var(--text-3)', margin: 0 }}>
+                Live alerts, upcoming meeting countdowns, and pending items for {activeUser?.name}
+              </p>
+            </div>
+          </div>
+          {dashboardNotifications.length > 0 && (
+            <span className="notif-count-pill">
+              {dashboardNotifications.length} Active {dashboardNotifications.length === 1 ? 'Alert' : 'Alerts'}
+            </span>
+          )}
+        </div>
+
+        {dashboardNotifications.length === 0 ? (
+          <div className="notif-empty-state">
+            <Check className="w-5 h-5" style={{ color: 'var(--emerald)' }} />
+            <span>All caught up! No pending meeting reminders or approvals.</span>
+          </div>
+        ) : (
+          <div className="dashboard-notif-grid">
+            {dashboardNotifications.map(n => (
+              <div
+                key={n.id}
+                onClick={() => {
+                  if (n.meeting) setSelectedMeetingModal(n.meeting);
+                  else if (n.onAction) n.onAction();
+                }}
+                className={`dash-notif-card dash-notif-${n.urgency}`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (n.meeting) setSelectedMeetingModal(n.meeting);
+                    else if (n.onAction) n.onAction();
+                  }
+                }}
+              >
+                <div className="dash-notif-left">
+                  <div className="dash-notif-icon-badge">{n.icon}</div>
+                  <div className="dash-notif-body">
+                    <div className="dash-notif-title-row">
+                      <span className="dash-notif-title">{n.title}</span>
+                      <span className={`dash-notif-urgency-tag tag-${n.urgency}`}>{n.badge}</span>
+                    </div>
+                    <div className="dash-notif-time">{n.timeInfo}</div>
+                    <div className="dash-notif-details">{n.details}</div>
+                  </div>
+                </div>
+                <div className="dash-notif-action-btn">
+                  <span>{n.actionLabel}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 2. SCHEDULED MEETINGS SECTION (ELEGANT CLICKABLE BLOCKS) */}
       {shouldShowMeetingsSection && (
-        <div className="glow-card p-5 mb-6" style={{ borderColor: 'rgba(79,209,199,0.25)' }}>
+        <div className="glow-card p-5 mb-6 meetings-section-wrapper" style={{ borderColor: 'rgba(79,209,199,0.25)' }}>
           <div className="card-section-header">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5" style={{ color: 'var(--cyan)' }} />
-              <h3>Upcoming Scheduled Meetings &amp; Syncs ({filteredMeetings.length})</h3>
+              <div>
+                <h3 className="text-md font-bold" style={{ color: 'var(--text-1)' }}>
+                  Upcoming Scheduled Meetings &amp; Syncs ({filteredMeetings.length})
+                </h3>
+                <p className="text-xs" style={{ color: 'var(--text-3)', margin: 0 }}>
+                  Tap any meeting block below to view complete details, agenda, and join links
+                </p>
+              </div>
             </div>
             {(isCEO || isPC || isTL || isPMTeam) && (
               <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-gold btn-xs">
@@ -359,57 +517,69 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             </form>
           )}
 
-          {/* Clean Redesigned Meetings Cards Grid */}
-          <div className="meetings-grid-container">
+          {/* Clean Redesigned Meetings Blocks Grid */}
+          <div className="meetings-blocks-grid">
             {filteredMeetings.length === 0 ? (
-              <p className="text-xs italic col-span-full" style={{ color: 'var(--text-4)' }}>
-                No upcoming meetings scheduled where you are included.
-              </p>
+              <div className="empty-meetings-block col-span-full">
+                <Calendar className="w-8 h-8" style={{ color: 'var(--text-4)', margin: '0 auto 8px' }} />
+                <p className="text-xs italic" style={{ color: 'var(--text-4)' }}>
+                  No upcoming meetings scheduled for your department ({selectedDept}).
+                </p>
+              </div>
             ) : (
               filteredMeetings.map(mtg => (
-                <div key={mtg.id} className="meeting-card-item">
-                  <div className="meeting-card-header">
-                    <div className="flex items-start gap-2">
-                      <Video className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'var(--cyan)' }} />
-                      <div className="meeting-title-text">{mtg.title}</div>
-                    </div>
-                    <span className="meeting-dept-badge">{mtg.targetDept}</span>
-                  </div>
-
-                  <div className="meeting-meta-row">
-                    <div className="meta-item">
-                      <User className="w-3.5 h-3.5" style={{ color: 'var(--amber)' }} />
-                      <span className="meta-label">Created By:</span>
-                      <span className="meta-val-gold">{mtg.organizer}</span>
-                    </div>
-
-                    <div className="meta-item">
-                      <Clock className="w-3.5 h-3.5" style={{ color: 'var(--cyan)' }} />
-                      <span className="meta-label">Date &amp; Time:</span>
-                      <span className="meta-val-time">{mtg.date} @ {mtg.time}</span>
-                    </div>
-
-                    {mtg.teamsLink && (
-                      <div className="meta-item font-mono truncate" style={{ fontSize: '0.75rem', color: 'var(--cyan)' }} title={mtg.teamsLink}>
-                        <Link className="w-3.5 h-3.5" style={{ color: 'var(--cyan)' }} />
-                        <a
-                          href={mtg.teamsLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ color: 'var(--cyan)', textDecoration: 'underline' }}
-                        >
-                          {mtg.teamsLink}
-                        </a>
+                <div
+                  key={mtg.id}
+                  onClick={() => setSelectedMeetingModal(mtg)}
+                  className="meeting-block glow-card"
+                  role="button"
+                  tabIndex={0}
+                  title="Click to view full meeting details and link"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedMeetingModal(mtg);
+                    }
+                  }}
+                >
+                  {/* Top: Video Icon, Meeting Name, Dept Tag */}
+                  <div className="meeting-block-top">
+                    <div className="meeting-block-title-row">
+                      <div className="meeting-video-icon-box">
+                        <Video className="w-5 h-5" style={{ color: 'var(--cyan)' }} />
                       </div>
-                    )}
+                      <div className="meeting-title-col">
+                        <h4 className="meeting-block-title">{mtg.title}</h4>
+                        <span className="meeting-dept-badge">{mtg.targetDept}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="meeting-card-footer">
-                    <span className="font-mono" style={{ fontSize: '11px', color: 'var(--text-3)' }}>ID: {mtg.id}</span>
-                    <button onClick={() => setSelectedMeetingModal(mtg)} className="btn-view-meeting">
-                      <span>View Details</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Middle: Prominent Timing Block (Meeting Name & Timing emphasis) */}
+                  <div className="meeting-block-timing-box">
+                    <div className="meeting-timing-item">
+                      <Calendar className="w-4 h-4" style={{ color: 'var(--amber)' }} />
+                      <span className="timing-label">Date:</span>
+                      <span className="timing-value-date">{mtg.date}</span>
+                    </div>
+                    <div className="meeting-timing-divider" />
+                    <div className="meeting-timing-item">
+                      <Clock className="w-4 h-4" style={{ color: 'var(--cyan)' }} />
+                      <span className="timing-label">Time:</span>
+                      <span className="timing-value-time">{mtg.time}</span>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Organizer & Tap Cue */}
+                  <div className="meeting-block-bottom">
+                    <div className="meeting-organizer-info">
+                      <User className="w-3.5 h-3.5" style={{ color: 'var(--amber)' }} />
+                      <span>Host: <strong style={{ color: 'var(--text-1)' }}>{mtg.organizer}</strong></span>
+                    </div>
+                    <div className="meeting-tap-cue">
+                      <span>View details</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
               ))
@@ -562,37 +732,124 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
       {/* Detailed Meeting Info Modal */}
       {selectedMeetingModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content glow-card">
+        <div className="modal-backdrop" onClick={() => setSelectedMeetingModal(null)}>
+          <div className="modal-content glow-card meeting-detail-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="flex items-center gap-2">
-                <Video className="w-6 h-6" style={{ color: 'var(--cyan)' }} />
-                <h3 className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>{selectedMeetingModal.title}</h3>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(79,209,199,0.12)', color: 'var(--cyan)', border: '1px solid rgba(79,209,199,0.25)' }}
+                >
+                  <Video className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>{selectedMeetingModal.title}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="meeting-dept-badge">{selectedMeetingModal.targetDept}</span>
+                    <span className="font-mono text-[11px]" style={{ color: 'var(--text-3)' }}>ID: {selectedMeetingModal.id}</span>
+                  </div>
+                </div>
               </div>
               <button onClick={() => setSelectedMeetingModal(null)} className="icon-btn-ghost">✕</button>
             </div>
 
-            <div className="modal-body space-y-3 text-xs">
-              <div className="settings-field-box space-y-2">
-                <div><strong style={{ color: 'var(--amber)' }}>Created By:</strong> {selectedMeetingModal.organizer} ({selectedMeetingModal.organizerId})</div>
-                <div><strong style={{ color: 'var(--blue)' }}>Day &amp; Time:</strong> {selectedMeetingModal.date} at {selectedMeetingModal.time}</div>
-                <div><strong style={{ color: 'var(--text-2)' }}>Target Department:</strong> {selectedMeetingModal.targetDept}</div>
-                {selectedMeetingModal.teamsLink && (
+            <div className="modal-body space-y-4 text-xs">
+              {/* Highlighted Timing Block */}
+              <div className="meeting-modal-timing-card">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" style={{ color: 'var(--amber)' }} />
                   <div>
-                    <strong style={{ color: 'var(--blue)' }}>Meeting URL:</strong>{' '}
-                    <a href={selectedMeetingModal.teamsLink} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', textDecoration: 'underline' }}>
-                      {selectedMeetingModal.teamsLink}
-                    </a>
+                    <span className="text-[11px] font-semibold" style={{ color: 'var(--text-3)', display: 'block' }}>SCHEDULED DATE</span>
+                    <span className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{selectedMeetingModal.date}</span>
                   </div>
-                )}
+                </div>
+                <div className="modal-timing-separator" />
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" style={{ color: 'var(--cyan)' }} />
+                  <div>
+                    <span className="text-[11px] font-semibold" style={{ color: 'var(--text-3)', display: 'block' }}>SCHEDULED TIME</span>
+                    <span className="text-sm font-bold font-mono" style={{ color: 'var(--cyan)' }}>{selectedMeetingModal.time}</span>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <h4 style={{ fontWeight: 700, color: 'var(--text-2)', marginBottom: '8px' }}>Agenda &amp; Meeting Brief:</h4>
-                <p className="settings-field-box" style={{ color: 'var(--text-2)' }}>
-                  {selectedMeetingModal.agenda}
+              {/* Host & Target Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="settings-field-box">
+                  <span className="settings-field-label">Meeting Host / Organizer</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <User className="w-4 h-4" style={{ color: 'var(--amber)' }} />
+                    <span className="font-bold" style={{ color: 'var(--text-1)' }}>{selectedMeetingModal.organizer}</span>
+                  </div>
+                  {selectedMeetingModal.organizerId && (
+                    <span className="font-mono text-[11px]" style={{ color: 'var(--text-3)', display: 'block', marginTop: '2px' }}>
+                      ID: {selectedMeetingModal.organizerId}
+                    </span>
+                  )}
+                </div>
+
+                <div className="settings-field-box">
+                  <span className="settings-field-label">Target Audience / Dept</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Building className="w-4 h-4" style={{ color: 'var(--blue)' }} />
+                    <span className="font-bold" style={{ color: 'var(--text-1)' }}>{selectedMeetingModal.targetDept}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Agenda Briefing */}
+              <div className="meeting-agenda-box">
+                <span className="settings-field-label" style={{ marginBottom: '6px', display: 'block' }}>Meeting Agenda &amp; Discussion Topics</span>
+                <p className="meeting-agenda-text">
+                  {selectedMeetingModal.agenda || 'No detailed agenda provided for this sync.'}
                 </p>
               </div>
+
+              {/* MS Teams / Video Call Join Link */}
+              {selectedMeetingModal.teamsLink ? (
+                <div className="meeting-link-card">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--cyan)' }}>
+                      <Link className="w-3.5 h-3.5" /> Video Call Link
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedMeetingModal.teamsLink);
+                        showToast('Meeting link copied to clipboard!', 'success');
+                      }}
+                      className="btn-secondary btn-xs flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" /> Copy Link
+                    </button>
+                  </div>
+
+                  <a
+                    href={selectedMeetingModal.teamsLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="meeting-join-link-box truncate block font-mono text-xs"
+                    title={selectedMeetingModal.teamsLink}
+                  >
+                    {selectedMeetingModal.teamsLink}
+                  </a>
+
+                  <a
+                    href={selectedMeetingModal.teamsLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-cyan w-full flex items-center justify-center gap-2 mt-3"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Join Video Meeting Now</span>
+                  </a>
+                </div>
+              ) : (
+                <div className="settings-field-box italic text-center py-2" style={{ color: 'var(--text-4)' }}>
+                  No online video link attached. In-person or internal sync.
+                </div>
+              )}
             </div>
 
             <div className="modal-footer flex items-center justify-between gap-3">
@@ -612,7 +869,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                 </>
               ) : (
                 <button onClick={() => setSelectedMeetingModal(null)} className="btn-gold w-full">
-                  Close Meeting Details
+                  Close Details
                 </button>
               )}
             </div>

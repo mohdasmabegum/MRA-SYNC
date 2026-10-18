@@ -110,9 +110,16 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
     setActiveTab(tabId);
   };
 
-  const handleNotifItemClick = (targetTab) => {
+  const handleNotifItemClick = (notif) => {
     setShowNotifDropdown(false);
-    setActiveTab(targetTab);
+    if (!notif) return;
+    const targetTab = typeof notif === 'string' ? notif : notif.targetTab;
+    setActiveTab(targetTab || 'dashboard');
+    if (notif.meetingId) {
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('mra_open_meeting', { detail: { meetingId: notif.meetingId } }));
+      }, 80);
+    }
   };
 
   const handleToggleTheme = () => {
@@ -227,7 +234,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
                     notificationsList.map(n => (
                       <div
                         key={n.id}
-                        onClick={() => handleNotifItemClick(n.targetTab)}
+                        onClick={() => handleNotifItemClick(n)}
                         className="notif-item-card p-2.5 rounded-lg flex justify-between items-center cursor-pointer transition-all"
                       >
                         <div>
