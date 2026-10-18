@@ -8,7 +8,8 @@ const STORAGE_KEYS = {
   MEETINGS: 'mra_db_meeting_logs',
   CONVERSATIONS: 'mra_db_conversations',
   CHAT_MESSAGES: 'mra_db_chat_messages',
-  SESSION: 'mra_db_active_session'
+  SESSION: 'mra_db_active_session',
+  RECENTLY_DELETED: 'mra_db_recently_deleted'
 };
 
 // Initial Seed Users
@@ -612,18 +613,140 @@ export const resetDatabaseToDefaults = () => {
   triggerStorageEvent(STORAGE_KEYS.CHAT_MESSAGES);
 };
 
-export const deleteRecordFromSheet = (sheetKey, recordId) => {
-  let key;
-  if (sheetKey === 'leaves') key = STORAGE_KEYS.LEAVES;
-  if (sheetKey === 'materials') key = STORAGE_KEYS.MATERIALS;
-  if (sheetKey === 'workLogs') key = STORAGE_KEYS.WORK_LOGS;
-  if (sheetKey === 'users') key = STORAGE_KEYS.USERS;
-  if (sheetKey === 'meetings') key = STORAGE_KEYS.MEETINGS;
+// ═══════════════════════════════════════════════════════════════════
+// RECENTLY DELETED (TRASH RETENTION FOR UP TO 100 DAYS)
+// ═══════════════════════════════════════════════════════════════════
+const RETENTION_LIMIT_DAYS = 100;
 
-  if (key) {
-    const list = JSON.parse(localStorage.getItem(key) || '[]');
-    const filtered = list.filter(item => item.id !== recordId);
-    localStorage.setItem(key, JSON.stringify(filtered));
-    triggerStorageEvent(key);
+export const getRecentlyDeleted = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.RECENTLY_DELETED);
+    const list = raw ? JSON.parse(raw) : [];
+    const now = Date.now();
+    let changed = false;
+
+    // Filter out records older than 100 days
+    const activeTrash = list.map(entry => {
+      const deletedTime = new Date(entry.deletedAt).getTime();
+      const diffMs = now - deletedTime;
+      const daysPassed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const daysRemaining = Math.max(0, RETENTION_LIMIT_DAYS - daysPassed);
+      return { ...entry, daysPassed, daysRemaining };
+    }).filter(entry => {
+      const isValid = entry.daysRemaining > 0;
+      if (!isValid) changed = true;
+      return isValid;
+    });
+
+    if (changed) {
+      localStorage.setItem(STORAGE_KEYS.RECENTLY_DELETED, JSON.stringify(activeTrash));
+    }
+
+    return activeTrash.sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
+  } catch (err) {
+    console.error('Error reading recently deleted records:', err);
+    return [];
   }
 };
+
+const getSheetStorageKey = (sheetKey) => {
+  if (sheetKey === 'leaves') return STORAGE_KEYS.LEAVES;
+  if (sheetKey === 'materials') return STORAGE_KEYS.MATERIALS;
+  if (sheetKey === 'workLogs') return STORAGE_KEYS.WORK_LOGS;
+  if (sheetKey === 'users') return STORAGE_KEYS.USERS;
+  if (sheetKey === 'meetings') return STORAGE_KEYS.MEETINGS;
+  return null;
+};
+
+const getSheetDisplayName = (sheetKey) => {
+  switch (sheetKey) {
+    case 'users': return 'Users Roster';
+    case 'leaves': return 'Leave Applications';
+    case 'materials': return 'Material Requisitions';
+    case 'workLogs': return 'Work Transfer Logs';
+    case 'meetings': return 'Scheduled Meetings';
+    default: return sheetKey;
+  }
+};
+
+export const softDeleteRecord = (sheetKey, recordId, deletedBy = 'Administrator') => {
+  const key = getSheetStorageKey(sheetKey);
+  if (!key) return null;
+
+  const currentList = JSON.parse(localStorage.getItem(key) || '[]');
+  const recordIndex = currentList.findIndex(r => r.id === recordId);
+  if (recordIndex === -1) return null;
+
+  const recordToDelete = currentList[recordIndex];
+  // Remove from primary table
+  const updatedList = currentList.filter(r => r.id !== recordId);
+  localStorage.setItem(key, JSON.stringify(updatedList));
+
+  // Build envelope with 100-day retention metadata
+  const deletedEntry = {
+    deletedId: `del_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    originalId: recordToDelete.id,
+    sheetKey,
+    sheetLabel: getSheetDisplayName(sheetKey),
+    primaryInfo: recordToDelete.name || recordToDelete.title || recordToDelete.empName || recordToDelete.workAlloter || recordToDelete.materialType || recordToDelete.id,
+    secondaryInfo: recordToDelete.dept || recordToDelete.deptName || recordToDelete.targetDept || recordToDelete.role || recordToDelete.fromDept || 'General',
+    record: recordToDelete,
+    deletedAt: new Date().toISOString(),
+    deletedDateFormatted: new Date().toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }),
+    deletedBy: deletedBy || 'Administrator',
+    retentionDaysTotal: RETENTION_LIMIT_DAYS,
+    daysRemaining: RETENTION_LIMIT_DAYS
+  };
+
+  const trashList = getRecentlyDeleted();
+  trashList.unshift(deletedEntry);
+  localStorage.setItem(STORAGE_KEYS.RECENTLY_DELETED, JSON.stringify(trashList));
+
+  triggerStorageEvent(key);
+  triggerStorageEvent(STORAGE_KEYS.RECENTLY_DELETED);
+  return deletedEntry;
+};
+
+export const restoreRecord = (deletedId) => {
+  const trashList = getRecentlyDeleted();
+  const entryIndex = trashList.findIndex(e => e.deletedId === deletedId || e.originalId === deletedId);
+  if (entryIndex === -1) return null;
+
+  const entry = trashList[entryIndex];
+  const key = getSheetStorageKey(entry.sheetKey);
+  if (key) {
+    const list = JSON.parse(localStorage.getItem(key) || '[]');
+    // Avoid duplicate if it already exists
+    if (!list.some(r => r.id === entry.record.id)) {
+      list.push(entry.record);
+      localStorage.setItem(key, JSON.stringify(list));
+      triggerStorageEvent(key);
+    }
+  }
+
+  // Remove from trash
+  const updatedTrash = trashList.filter((_, idx) => idx !== entryIndex);
+  localStorage.setItem(STORAGE_KEYS.RECENTLY_DELETED, JSON.stringify(updatedTrash));
+  triggerStorageEvent(STORAGE_KEYS.RECENTLY_DELETED);
+  return entry.record;
+};
+
+export const permanentlyDeleteRecord = (deletedId) => {
+  const trashList = getRecentlyDeleted();
+  const updatedTrash = trashList.filter(e => e.deletedId !== deletedId && e.originalId !== deletedId);
+  localStorage.setItem(STORAGE_KEYS.RECENTLY_DELETED, JSON.stringify(updatedTrash));
+  triggerStorageEvent(STORAGE_KEYS.RECENTLY_DELETED);
+};
+
+export const clearAllRecentlyDeleted = () => {
+  localStorage.setItem(STORAGE_KEYS.RECENTLY_DELETED, JSON.stringify([]));
+  triggerStorageEvent(STORAGE_KEYS.RECENTLY_DELETED);
+};
+
+// Backwards-compatible delete alias: now routes through soft-delete (100 days retention)
+export const deleteRecordFromSheet = (sheetKey, recordId, deletedBy) => {
+  return softDeleteRecord(sheetKey, recordId, deletedBy);
+};
+

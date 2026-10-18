@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getUsers, getLeaves, getMaterials, getWorkLogs, getMeetings, addMeetingLog } from '../services/db';
+import { getUsers, getLeaves, getMaterials, getWorkLogs, getMeetings, addMeetingLog, softDeleteRecord } from '../services/db';
 import { useToast } from '../context/ToastContext';
 import {
   Users,
@@ -16,7 +16,8 @@ import {
   User,
   Link,
   Check,
-  Home
+  Home,
+  Trash2
 } from 'lucide-react';
 
 export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigate }) => {
@@ -182,7 +183,21 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       time: '10:00 AM',
       agenda: '',
       teamsLink: '',
-      participants: [activeUser?.name]
+    });
+  };
+
+  const handleDeleteMeeting = (meetingId) => {
+    showModalPopup({
+      title: 'Move Meeting to Recently Deleted?',
+      message: 'This scheduled meeting will be moved to Recently Deleted and retained for up to 100 days. You can restore it at any time from the CEO Database Console.',
+      iconType: 'meeting',
+      confirmText: 'Move to Recently Deleted',
+      cancelText: 'Keep Meeting',
+      onConfirm: () => {
+        softDeleteRecord('meetings', meetingId, activeUser?.name);
+        showToast('Meeting moved to Recently Deleted (100 days retention).', 'warning');
+        setSelectedMeetingModal(null);
+      }
     });
   };
 
@@ -257,10 +272,10 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       {/* SCHEDULED MEETINGS SECTION (EXPLICIT USER INCLUSION FILTERING) */}
       {shouldShowMeetingsSection && (
         <div className="glow-card p-5 mb-6" style={{ borderColor: 'rgba(79,209,199,0.25)' }}>
-          <div className="card-section-header justify-between">
+          <div className="card-section-header">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5" style={{ color: 'var(--cyan)' }} />
-              <h3>📅 Upcoming Scheduled Meetings &amp; Syncs ({filteredMeetings.length})</h3>
+              <h3>Upcoming Scheduled Meetings &amp; Syncs ({filteredMeetings.length})</h3>
             </div>
             {(isCEO || isPC || isTL || isPMTeam) && (
               <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-gold btn-xs">
@@ -406,7 +421,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
       {/* DEPARTMENT-WISE EMPLOYEE ROSTER & TODAY ON LEAVE TAB SYSTEM */}
       {!isNormalEmp && (
         <div className="glow-card p-5">
-          <div className="flex justify-between items-center mb-4 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="card-section-header">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5" style={{ color: 'var(--amber)' }} />
               <h3 className="text-md font-bold" style={{ color: 'var(--text-1)' }}>
@@ -415,7 +430,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             </div>
 
             {/* Sub-view Tab Switcher */}
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveTabSubView('roster')}
                 className={`tab-btn ${activeTabSubView === 'roster' ? 'active' : ''}`}
@@ -435,7 +450,7 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
           {/* Sub-view 1: Employee Cards Grid with Active, Accepted, Completed Counts */}
           {activeTabSubView === 'roster' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="emp-roster-grid">
               {visibleUsers.map(emp => {
                 const stats = getEmployeeDetailedStats(emp.id);
 
@@ -443,18 +458,28 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                   <div
                     key={emp.id}
                     onClick={() => setSelectedEmpModal(emp)}
-                    className="emp-roster-item justify-between"
+                    className="emp-roster-item"
                   >
                     <div className="flex items-center gap-3">
-                      <img src={emp.avatar} alt={emp.name} className="emp-avatar-sm" />
+                      <div className="relative shrink-0">
+                        <img src={emp.avatar} alt={emp.name} className="emp-avatar-sm" />
+                        <span
+                          className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
+                          style={{
+                            background: stats.isOnLeaveToday ? 'var(--rose)' : 'var(--emerald)',
+                            border: '2px solid var(--bg-surface)'
+                          }}
+                          title={stats.isOnLeaveToday ? 'On Leave' : 'Active Working'}
+                        />
+                      </div>
                       <div>
-                        <div className="font-bold text-xs" style={{ color: 'var(--text-1)' }}>{emp.name}</div>
+                        <div className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>{emp.name}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{emp.id} • {emp.role}</div>
                         <div style={{ fontSize: '11px', color: 'var(--amber)' }}>{emp.dept}</div>
                       </div>
                     </div>
 
-                    <div className="text-right space-y-1" style={{ fontSize: '11px' }}>
+                    <div className="text-right space-y-1 shrink-0" style={{ fontSize: '11px' }}>
                       <span className={`status-pill ${stats.isOnLeaveToday ? 'pill-leave' : 'pill-active'}`}>
                         {stats.isOnLeaveToday ? 'On Leave' : 'Active Working'}
                       </span>
@@ -560,10 +585,26 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button onClick={() => setSelectedMeetingModal(null)} className="btn-gold w-full">
-                Close Meeting Details
-              </button>
+            <div className="modal-footer flex items-center justify-between gap-3">
+              {(isCEO || selectedMeetingModal.organizerId === activeUser?.id) ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMeeting(selectedMeetingModal.id)}
+                    className="btn-secondary"
+                    style={{ color: 'var(--rose)', borderColor: 'rgba(252,129,129,0.30)' }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Move to Recently Deleted
+                  </button>
+                  <button onClick={() => setSelectedMeetingModal(null)} className="btn-gold">
+                    Close Details
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setSelectedMeetingModal(null)} className="btn-gold w-full">
+                  Close Meeting Details
+                </button>
+              )}
             </div>
           </div>
         </div>

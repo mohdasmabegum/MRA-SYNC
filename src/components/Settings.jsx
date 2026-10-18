@@ -79,7 +79,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="settings-grid-layout">
         {/* 1. Profile DP & Account Overview Card */}
         <div className="glow-card p-6 flex flex-col justify-between">
           <div>
@@ -149,7 +149,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
 
             <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Select your visual theme preference for MRA SYNC:</p>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="theme-options-grid">
               {/* Dark Theme Option */}
               <button
                 onClick={() => handleThemeChange('dark')}
@@ -216,7 +216,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
         </div>
 
         {/* 3. Push Notification Token & Mobile Preferences */}
-        <div className="glow-card p-6 md:col-span-2">
+        <div className="glow-card p-6 settings-span-full">
           <h3 className="text-md font-bold mb-4 flex items-center gap-2 pb-3" style={{ color: 'var(--text-1)', ...cardBorder }}>
             <BellRing className="w-5 h-5" style={{ color: 'var(--blue)' }} />
             Real-time Background Push Notification Token
@@ -253,7 +253,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
         </div>
 
         {/* 4. Session & Data Management */}
-        <div className="glow-card p-6 md:col-span-2">
+        <div className="glow-card p-6 settings-span-full">
           <h3 className="text-md font-bold mb-4 flex items-center gap-2 pb-3" style={{ color: 'var(--text-1)', ...cardBorder }}>
             <ShieldCheck className="w-5 h-5" style={{ color: 'var(--emerald)' }} />
             Session Security &amp; Data Export
