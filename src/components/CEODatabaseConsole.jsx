@@ -420,23 +420,26 @@ export const CEODatabaseConsole = ({ activeUser, onBackToDashboard }) => {
                         {item.id}
                       </td>
 
-                      {/* Primary Info with Avatar if user */}
+                      {/* Primary Info - Clean Name & ID (No photo) */}
                       <td>
-                        <div className="flex items-center gap-2.5">
-                          {item.avatar && (
-                            <img
-                              src={item.avatar}
-                              alt={item.name}
-                              className="w-7 h-7 rounded-full object-cover shrink-0"
-                              style={{ border: '1px solid var(--border)' }}
-                            />
-                          )}
-                          <div>
-                            <div className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>
-                              {item.name || item.title || item.empName || item.workAlloter || item.materialType}
-                            </div>
+                        <div>
+                          <div className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>
+                            {item.name || item.title || item.empName || item.workAlloter || item.materialType}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span
+                              className="font-mono text-xs font-semibold px-2 py-0.5 rounded"
+                              style={{
+                                background: 'rgba(99,179,237,0.12)',
+                                color: 'var(--blue)',
+                                border: '1px solid rgba(99,179,237,0.25)',
+                                display: 'inline-block'
+                              }}
+                            >
+                              ID: {item.id}
+                            </span>
                             {item.email && (
-                              <div className="text-xs" style={{ color: 'var(--text-3)' }}>{item.email}</div>
+                              <span className="text-xs" style={{ color: 'var(--text-3)' }}>{item.email}</span>
                             )}
                           </div>
                         </div>

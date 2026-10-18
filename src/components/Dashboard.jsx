@@ -461,10 +461,20 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                     className="emp-roster-item"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="relative shrink-0">
-                        <img src={emp.avatar} alt={emp.name} className="emp-avatar-sm" />
+                      <div
+                        className="shrink-0 flex items-center justify-center font-mono font-bold rounded-lg relative"
+                        style={{
+                          width: '42px',
+                          height: '42px',
+                          background: 'rgba(99,179,237,0.12)',
+                          color: 'var(--blue)',
+                          border: '1px solid var(--border)',
+                          fontSize: '0.72rem'
+                        }}
+                      >
+                        {emp.id.replace(/[^0-9A-Z]/gi, '').slice(-4) || 'EMP'}
                         <span
-                          className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
+                          className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
                           style={{
                             background: stats.isOnLeaveToday ? 'var(--rose)' : 'var(--emerald)',
                             border: '2px solid var(--bg-surface)'
@@ -474,8 +484,8 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                       </div>
                       <div>
                         <div className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>{emp.name}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{emp.id} • {emp.role}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--amber)' }}>{emp.dept}</div>
+                        <div className="font-mono text-xs font-semibold" style={{ color: 'var(--blue)' }}>ID: {emp.id}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{emp.role} • <span style={{ color: 'var(--amber)' }}>{emp.dept}</span></div>
                       </div>
                     </div>
 
@@ -616,15 +626,22 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
           <div className="modal-content glow-card emp-detail-modal max-w-2xl">
             <div className="modal-header">
               <div className="flex items-center gap-3">
-                <img
-                  src={selectedEmpModal.avatar}
-                  alt={selectedEmpModal.name}
-                  className="w-12 h-12 rounded-full"
-                  style={{ border: '2px solid rgba(236,201,75,0.50)' }}
-                />
+                <div
+                  className="flex items-center justify-center font-mono font-bold rounded-xl shrink-0"
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    background: 'rgba(236,201,75,0.12)',
+                    color: 'var(--amber)',
+                    border: '1px solid rgba(236,201,75,0.30)',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  {selectedEmpModal.id.slice(-4)}
+                </div>
                 <div>
                   <h3 className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>{selectedEmpModal.name}</h3>
-                  <span className="text-xs font-mono" style={{ color: 'var(--amber)' }}>
+                  <span className="text-xs font-mono" style={{ color: 'var(--blue)' }}>
                     ID: {selectedEmpModal.id} • {selectedEmpModal.role} ({selectedEmpModal.dept})
                   </span>
                 </div>

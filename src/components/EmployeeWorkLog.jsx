@@ -51,12 +51,29 @@ export const EmployeeWorkLog = ({ activeUser, onBackToDashboard }) => {
       {/* Profile + Stats Card */}
       <div className="glow-card" style={{padding:'24px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'20px'}}>
         <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
-          <img src={activeUser?.avatar} alt={activeUser?.name}
-            style={{width:'60px',height:'60px',borderRadius:'50%',objectFit:'cover',border:'2px solid var(--blue)'}} />
+          <div
+            style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: 'var(--r-md)',
+              background: 'rgba(99,179,237,0.12)',
+              color: 'var(--blue)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              flexShrink: 0
+            }}
+          >
+            {activeUser?.id?.replace(/[^0-9A-Z]/gi, '').slice(-4) || 'EMP'}
+          </div>
           <div>
-            <div style={{fontWeight:800, fontSize:'1.05rem', color:'var(--text-1)', marginBottom:'2px'}}>{activeUser?.name}</div>
-            <div style={{fontSize:'0.75rem', color:'var(--blue)', fontFamily:'JetBrains Mono,monospace', marginBottom:'2px'}}>
-              {activeUser?.id} · {activeUser?.role}
+            <div style={{fontWeight:800, fontSize:'1.1rem', color:'var(--text-1)', marginBottom:'2px'}}>{activeUser?.name}</div>
+            <div style={{fontSize:'0.78rem', color:'var(--blue)', fontFamily:'JetBrains Mono,monospace', marginBottom:'2px', fontWeight:600}}>
+              Employee ID: {activeUser?.id} · {activeUser?.role}
             </div>
             <div style={{fontSize:'0.75rem', color:'var(--text-3)'}}>{activeUser?.dept}</div>
           </div>

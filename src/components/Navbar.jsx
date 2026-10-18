@@ -245,10 +245,27 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
 
           {/* User Profile Card */}
           <div className="user-profile-badge" onClick={() => handleTabChangeSilently('settings')} style={{ cursor: 'pointer' }}>
-            <img src={activeUser?.avatar} alt={activeUser?.name} className="user-avatar" />
+            <div
+              style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                background: 'rgba(99,179,237,0.15)',
+                color: 'var(--blue)',
+                border: '1.5px solid var(--blue)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                flexShrink: 0
+              }}
+            >
+              {activeUser?.name?.charAt(0) || 'U'}
+            </div>
             <div className="user-info-text">
               <span className="user-name">{activeUser?.name}</span>
-              <span className="user-role">{activeUser?.role}</span>
+              <span className="user-role">{activeUser?.id} · {activeUser?.role}</span>
             </div>
           </div>
 
