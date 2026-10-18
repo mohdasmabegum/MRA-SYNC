@@ -271,8 +271,8 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
 
           {/* Schedule / Import Meeting Form */}
           {showScheduleForm && (
-            <form onSubmit={handleScheduleMeetingSubmit} className="bg-slate-900/90 p-4 rounded-lg border border-cyan-500/40 mb-4">
-              <h4 className="text-sm font-bold text-cyan-300 mb-3">🗓️ Schedule / Import MS Teams / Meeting Link</h4>
+            <form onSubmit={handleScheduleMeetingSubmit} className="meeting-form-container">
+              <h4>🗓️ Schedule / Import MS Teams / Meeting Link</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs mb-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Meeting Title *</label>
@@ -517,14 +517,14 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
             </div>
 
             <div className="modal-body space-y-3 text-xs">
-              <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800 space-y-1">
-                <div><strong className="text-amber-400">Created By:</strong> {selectedMeetingModal.organizer} ({selectedMeetingModal.organizerId})</div>
-                <div><strong className="text-cyan-400">Day & Time:</strong> {selectedMeetingModal.date} at {selectedMeetingModal.time}</div>
-                <div><strong className="text-slate-300">Target Department:</strong> {selectedMeetingModal.targetDept}</div>
+              <div className="settings-field-box space-y-2">
+                <div><strong style={{color:'var(--amber)'}}>Created By:</strong> {selectedMeetingModal.organizer} ({selectedMeetingModal.organizerId})</div>
+                <div><strong style={{color:'var(--blue)'}}>Day &amp; Time:</strong> {selectedMeetingModal.date} at {selectedMeetingModal.time}</div>
+                <div><strong style={{color:'var(--text-2)'}}>Target Department:</strong> {selectedMeetingModal.targetDept}</div>
                 {selectedMeetingModal.teamsLink && (
                   <div>
-                    <strong className="text-cyan-400">Imported Meeting URL:</strong>{' '}
-                    <a href={selectedMeetingModal.teamsLink} target="_blank" rel="noreferrer" className="underline text-cyan-300">
+                    <strong style={{color:'var(--blue)'}}>Meeting URL:</strong>{' '}
+                    <a href={selectedMeetingModal.teamsLink} target="_blank" rel="noreferrer" style={{color:'var(--blue)', textDecoration:'underline'}}>
                       {selectedMeetingModal.teamsLink}
                     </a>
                   </div>
@@ -532,8 +532,8 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-200 mb-1">Agenda & Meeting Brief:</h4>
-                <p className="bg-slate-900/40 p-3 rounded border border-slate-800 text-slate-300">
+                <h4 style={{fontWeight:700, color:'var(--text-2)', marginBottom:'8px'}}>Agenda &amp; Meeting Brief:</h4>
+                <p className="settings-field-box" style={{color:'var(--text-2)'}}>
                   {selectedMeetingModal.agenda}
                 </p>
               </div>
@@ -570,69 +570,69 @@ export const Dashboard = ({ activeUser, selectedDept, setSelectedDept, onNavigat
                 return (
                   <>
                     <div className="grid grid-cols-3 gap-3 text-center">
-                      <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg">
-                        <span className="text-lg font-bold text-amber-400 block">{stats.acceptedCount}</span>
-                        <span className="text-[11px] text-slate-300">Current Accepted Tasks</span>
+                      <div style={{background:'rgba(236,201,75,0.08)', border:'1px solid rgba(236,201,75,0.20)', padding:'14px', borderRadius:'var(--r-md)'}}>
+                        <span style={{fontSize:'1.3rem', fontWeight:800, color:'var(--amber)', display:'block'}}>{stats.acceptedCount}</span>
+                        <span style={{fontSize:'0.70rem', color:'var(--text-3)'}}>Accepted Tasks</span>
                       </div>
-                      <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-lg">
-                        <span className="text-lg font-bold text-emerald-400 block">{stats.completedCount}</span>
-                        <span className="text-[11px] text-slate-300">Total Completed Tasks</span>
+                      <div style={{background:'rgba(72,187,120,0.08)', border:'1px solid rgba(72,187,120,0.20)', padding:'14px', borderRadius:'var(--r-md)'}}>
+                        <span style={{fontSize:'1.3rem', fontWeight:800, color:'var(--emerald)', display:'block'}}>{stats.completedCount}</span>
+                        <span style={{fontSize:'0.70rem', color:'var(--text-3)'}}>Total Completed</span>
                       </div>
-                      <div className="bg-cyan-500/10 border border-cyan-500/30 p-3 rounded-lg">
-                        <span className="text-lg font-bold text-cyan-400 block">{stats.pastWeekCompletedCount}</span>
-                        <span className="text-[11px] text-slate-300">Past 1-Week Completed</span>
+                      <div style={{background:'rgba(99,179,237,0.08)', border:'1px solid rgba(99,179,237,0.20)', padding:'14px', borderRadius:'var(--r-md)'}}>
+                        <span style={{fontSize:'1.3rem', fontWeight:800, color:'var(--blue)', display:'block'}}>{stats.pastWeekCompletedCount}</span>
+                        <span style={{fontSize:'0.70rem', color:'var(--text-3)'}}>Past 7 Days</span>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <h4 className="font-bold text-amber-400 flex items-center gap-1">
-                        <ArrowRightLeft className="w-4 h-4" /> SECTION 1: Current Working / Accepted Tasks ({stats.acceptedTasksList.length})
+                      <h4 style={{fontWeight:700, color:'var(--amber)', display:'flex', alignItems:'center', gap:'6px', fontSize:'0.82rem'}}>
+                        <ArrowRightLeft style={{width:'14px', height:'14px'}} /> Current / Accepted Tasks ({stats.acceptedTasksList.length})
                       </h4>
                       {stats.acceptedTasksList.length === 0 ? (
-                        <p className="text-slate-500 italic bg-slate-900/40 p-2 rounded">No current active tasks.</p>
+                        <p className="settings-field-box" style={{color:'var(--text-3)', fontStyle:'italic'}}>No current active tasks.</p>
                       ) : (
                         stats.acceptedTasksList.map(t => (
-                          <div key={t.id} className="bg-slate-900/60 p-2 rounded border border-amber-500/30">
-                            <div className="font-bold text-white">{t.projectName} ({t.id})</div>
-                            <div className="text-slate-400">Allotted by: {t.workAlloter} ({t.fromDept})</div>
+                          <div key={t.id} className="settings-field-box">
+                            <div style={{fontWeight:700, color:'var(--text-1)', marginBottom:'2px'}}>{t.projectName} <span style={{color:'var(--text-3)', fontWeight:400}}>({t.id})</span></div>
+                            <div style={{color:'var(--text-3)', fontSize:'0.75rem'}}>Allotted by: {t.workAlloter} ({t.fromDept})</div>
                           </div>
                         ))
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <h4 className="font-bold text-emerald-400 flex items-center gap-1">
-                        <Check className="w-4 h-4" /> SECTION 2: Completed Tasks ({stats.completedTasksList.length})
+                      <h4 style={{fontWeight:700, color:'var(--emerald)', display:'flex', alignItems:'center', gap:'6px', fontSize:'0.82rem'}}>
+                        <Check style={{width:'14px', height:'14px'}} /> Completed Tasks ({stats.completedTasksList.length})
                       </h4>
                       {stats.completedTasksList.length === 0 ? (
-                        <p className="text-slate-500 italic bg-slate-900/40 p-2 rounded">No completed tasks recorded.</p>
+                        <p className="settings-field-box" style={{color:'var(--text-3)', fontStyle:'italic'}}>No completed tasks recorded.</p>
                       ) : (
                         stats.completedTasksList.map(t => (
-                          <div key={t.id} className="bg-slate-900/60 p-2 rounded border border-emerald-500/30 flex justify-between">
+                          <div key={t.id} className="settings-field-box" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                             <div>
-                              <div className="font-bold text-white">{t.projectName}</div>
-                              <div className="text-slate-400">Done: {t.completedDate}</div>
+                              <div style={{fontWeight:700, color:'var(--text-1)'}}>{t.projectName}</div>
+                              <div style={{color:'var(--text-3)', fontSize:'0.75rem'}}>Done: {t.completedDate}</div>
                             </div>
-                            <span className="text-emerald-400 font-mono font-bold">Completed ✅</span>
+                            <span style={{color:'var(--emerald)', fontWeight:700, fontSize:'0.75rem'}}>✓ Completed</span>
                           </div>
                         ))
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <h4 className="font-bold text-purple-400 flex items-center gap-1">
-                        <CalendarCheck className="w-4 h-4" /> SECTION 3: Employee Leave Status & Upcoming Leaves
+                      <h4 style={{fontWeight:700, color:'var(--purple)', display:'flex', alignItems:'center', gap:'6px', fontSize:'0.82rem'}}>
+                        <CalendarCheck style={{width:'14px', height:'14px'}} /> Leave Status &amp; Upcoming Leaves
                       </h4>
                       {stats.upcomingLeaves.length === 0 ? (
-                        <p className="text-slate-500 italic bg-slate-900/40 p-2 rounded">No upcoming leave applications for this employee.</p>
+                        <p className="settings-field-box" style={{color:'var(--text-3)', fontStyle:'italic'}}>No upcoming leave applications.</p>
                       ) : (
                         stats.upcomingLeaves.map(l => (
-                          <div key={l.id} className="bg-slate-900/60 p-2 rounded border border-purple-500/30 flex justify-between">
+                          <div key={l.id} className="settings-field-box" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                             <div>
-                              <div className="font-bold text-white">{l.leaveType} ({l.noOfDays} days): {l.purpose}</div>
-                              <div className="text-slate-400">Dates: {l.fromTo}</div>
+                              <div style={{fontWeight:700, color:'var(--text-1)'}}>{l.leaveType} ({l.noOfDays} days): {l.purpose}</div>
+                              <div style={{color:'var(--text-3)', fontSize:'0.75rem'}}>Dates: {l.fromTo}</div>
                             </div>
-                            <span className="text-amber-400 font-bold">{l.status}</span>
+                            <span style={{color:'var(--amber)', fontWeight:700, fontSize:'0.75rem'}}>{l.status}</span>
                           </div>
                         ))
                       )}
