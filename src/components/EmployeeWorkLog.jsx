@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { getWorkLogs, getLeaves, getMaterials } from '../services/db';
-import { FileText, ArrowRightLeft, CalendarCheck, Boxes, User, ArrowLeft } from 'lucide-react';
+import { FileText, ArrowRightLeft, CalendarCheck, Boxes, ArrowLeft } from 'lucide-react';
+
+const S = {
+  td:   { padding:'12px 14px', borderBottom:'1px solid var(--border-subtle)', color:'var(--text-2)', fontSize:'0.83rem', verticalAlign:'middle' },
+  id:   { fontFamily:'JetBrains Mono, monospace', fontSize:'0.75rem', fontWeight:600, color:'var(--blue)' },
+  name: { fontWeight:700, color:'var(--text-1)' },
+  muted:{ color:'var(--text-3)', fontSize:'0.75rem' },
+  amber:{ color:'var(--amber)', fontWeight:600 },
+  empty:{ color:'var(--text-3)', fontStyle:'italic', textAlign:'center', padding:'24px' },
+  sH:   { fontWeight:700, color:'var(--text-1)', fontSize:'0.92rem', display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px', paddingBottom:'12px', borderBottom:'1px solid var(--border-subtle)' },
+  stat: (rgb) => ({ background:`rgba(${rgb},0.08)`, border:`1px solid rgba(${rgb},0.20)`, padding:'16px 12px', borderRadius:'var(--r-md)', textAlign:'center', flex:1 }),
+  tag:  { background:'var(--bg-hover)', border:'1px solid var(--border-subtle)', padding:'2px 9px', borderRadius:'12px', fontSize:'0.68rem', fontWeight:600, color:'var(--text-2)', display:'inline-flex' },
+};
 
 export const EmployeeWorkLog = ({ activeUser, onBackToDashboard }) => {
-  const [workLogs, setWorkLogs] = useState([]);
-  const [leaves, setLeaves] = useState([]);
+  const [workLogs,  setWorkLogs]  = useState([]);
+  const [leaves,    setLeaves]    = useState([]);
   const [materials, setMaterials] = useState([]);
 
   useEffect(() => {
@@ -14,105 +26,89 @@ export const EmployeeWorkLog = ({ activeUser, onBackToDashboard }) => {
   }, [activeUser]);
 
   const loadData = () => {
-    const allWork = getWorkLogs();
-    const allLeaves = getLeaves();
-    const allMaterials = getMaterials();
-
-    setWorkLogs(allWork.filter(w => w.receiverEmpId === activeUser?.id || w.senderEmpId === activeUser?.id));
-    setLeaves(allLeaves.filter(l => l.empId === activeUser?.id));
-    setMaterials(allMaterials.filter(m => m.empId === activeUser?.id));
+    setWorkLogs(getWorkLogs().filter(w => w.receiverEmpId === activeUser?.id || w.senderEmpId === activeUser?.id));
+    setLeaves(getLeaves().filter(l => l.empId === activeUser?.id));
+    setMaterials(getMaterials().filter(m => m.empId === activeUser?.id));
   };
 
   return (
     <div className="portal-page-container">
-      {/* Top Left Symbol Back Button */}
       <button onClick={onBackToDashboard} className="nav-back-symbol-btn">
-        <ArrowLeft className="w-4 h-4" />
-        <span>Return to Dashboard</span>
+        <ArrowLeft className="w-4 h-4" /><span>Return to Dashboard</span>
       </button>
 
-      {/* Header Bar */}
+      {/* Header */}
       <div className="portal-header-bar glow-card">
         <div>
-          <h2 className="portal-title flex items-center gap-2">
-            <FileText className="w-6 h-6 text-amber-400" />
-            Account Owner Work Log Base
+          <h2 className="portal-title" style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            <FileText style={{color:'var(--amber)'}} className="w-6 h-6" />
+            Personal Work Log Base
           </h2>
-          <p className="portal-subtitle">Personal records for {activeUser?.name} ({activeUser?.id} - {activeUser?.dept}).</p>
+          <p className="portal-subtitle">Records for {activeUser?.name} — {activeUser?.id} · {activeUser?.dept}</p>
         </div>
       </div>
 
-      {/* Account Owner Card */}
-      <div className="glow-card p-5 flex items-center justify-between border-amber-500/30">
-        <div className="flex items-center gap-4">
-          <img src={activeUser?.avatar} alt={activeUser?.name} className="w-14 h-14 rounded-full border-2 border-amber-400" />
+      {/* Profile + Stats Card */}
+      <div className="glow-card" style={{padding:'24px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'20px'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
+          <img src={activeUser?.avatar} alt={activeUser?.name}
+            style={{width:'60px',height:'60px',borderRadius:'50%',objectFit:'cover',border:'2px solid var(--blue)'}} />
           <div>
-            <h3 className="text-lg font-bold text-white">{activeUser?.name}</h3>
-            <span className="text-xs text-amber-400 font-mono">ID: {activeUser?.id} • Role: {activeUser?.role}</span>
-            <div className="text-xs text-slate-400">{activeUser?.dept}</div>
+            <div style={{fontWeight:800, fontSize:'1.05rem', color:'var(--text-1)', marginBottom:'2px'}}>{activeUser?.name}</div>
+            <div style={{fontSize:'0.75rem', color:'var(--blue)', fontFamily:'JetBrains Mono,monospace', marginBottom:'2px'}}>
+              {activeUser?.id} · {activeUser?.role}
+            </div>
+            <div style={{fontSize:'0.75rem', color:'var(--text-3)'}}>{activeUser?.dept}</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 text-center text-xs">
-          <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span className="text-amber-400 font-bold text-base block">{workLogs.length}</span>
-            <span className="text-slate-400">Work Logs</span>
+        <div style={{display:'flex', gap:'12px'}}>
+          <div style={S.stat('99,179,237')}>
+            <div style={{fontSize:'1.4rem', fontWeight:800, color:'var(--blue)', lineHeight:1}}>{workLogs.length}</div>
+            <div style={{fontSize:'0.72rem', color:'var(--text-3)', marginTop:'4px'}}>Work Logs</div>
           </div>
-          <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span className="text-cyan-400 font-bold text-base block">{materials.length}</span>
-            <span className="text-slate-400">Material Reqs</span>
+          <div style={S.stat('72,187,120')}>
+            <div style={{fontSize:'1.4rem', fontWeight:800, color:'var(--emerald)', lineHeight:1}}>{materials.length}</div>
+            <div style={{fontSize:'0.72rem', color:'var(--text-3)', marginTop:'4px'}}>Material Reqs</div>
           </div>
-          <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span className="text-purple-400 font-bold text-base block">{leaves.length}</span>
-            <span className="text-slate-400">Leaves</span>
+          <div style={S.stat('183,148,244')}>
+            <div style={{fontSize:'1.4rem', fontWeight:800, color:'var(--purple)', lineHeight:1}}>{leaves.length}</div>
+            <div style={{fontSize:'0.72rem', color:'var(--text-3)', marginTop:'4px'}}>Leave Apps</div>
           </div>
         </div>
       </div>
 
-      {/* Personal Work Logs Table */}
-      <div className="glow-card p-5">
-        <h3 className="text-md font-bold text-slate-200 mb-4 flex items-center gap-2">
-          <ArrowRightLeft className="w-4 h-4 text-emerald-400" />
+      {/* Work Transfer Records */}
+      <div className="glow-card" style={{padding:'24px'}}>
+        <h3 style={S.sH}>
+          <ArrowRightLeft style={{width:'18px', height:'18px', color:'var(--emerald)'}} />
           Personal Work Transfer Records ({workLogs.length})
         </h3>
-
         <div className="table-responsive">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Task ID</th>
-                <th>Project Name</th>
-                <th>Sender (Alloter)</th>
-                <th>Receiver</th>
-                <th>Hardware & Doc Details</th>
-                <th>Priority</th>
-                <th>Status</th>
+                {['Task ID','Project Name','Sender','Receiver','Hardware & Doc Details','Priority','Status'].map(h => (
+                  <th key={h} style={{color:'var(--text-3)',fontSize:'0.71rem',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.6px',padding:'11px 14px',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap'}}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {workLogs.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="text-center py-4 text-slate-500 italic">No work transfer logs recorded for your account.</td>
+                <tr><td colSpan="7" style={S.empty}>No work transfer logs recorded for your account.</td></tr>
+              ) : workLogs.map(w => (
+                <tr key={w.id}>
+                  <td style={{...S.td,...S.id}}>{w.id}</td>
+                  <td style={{...S.td,...S.name}}>{w.projectName}</td>
+                  <td style={S.td}>{w.workAlloter}</td>
+                  <td style={{...S.td,...S.amber}}>{w.receiverName}</td>
+                  <td style={{...S.td, ...S.muted, maxWidth:'200px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{w.hardwareDocInfo}</td>
+                  <td style={S.td}><span style={S.tag}>{w.requirement}</span></td>
+                  <td style={S.td}>
+                    <span className={`status-pill ${w.status.includes('Completed')?'pill-active':'pill-pending'}`}>{w.status}</span>
+                  </td>
                 </tr>
-              ) : (
-                workLogs.map(w => (
-                  <tr key={w.id}>
-                    <td className="font-mono text-cyan-400 text-xs font-semibold">{w.id}</td>
-                    <td className="font-bold text-white">{w.projectName}</td>
-                    <td className="text-slate-300">{w.workAlloter}</td>
-                    <td className="text-amber-300 font-medium">{w.receiverName}</td>
-                    <td className="text-xs text-slate-400 max-w-xs truncate">{w.hardwareDocInfo}</td>
-                    <td>
-                      <span className="badge-tag bg-slate-800 text-slate-300">{w.requirement}</span>
-                    </td>
-                    <td>
-                      <span className={`status-pill ${w.status.includes('Completed') ? 'pill-active' : 'pill-pending'}`}>
-                        {w.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>

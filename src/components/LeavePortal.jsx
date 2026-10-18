@@ -1,7 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { getLeaves, addLeaveRequest, updateLeaveStatus } from '../services/db';
 import { useToast } from '../context/ToastContext';
-import { CalendarCheck, PlusCircle, CheckCircle, XCircle, UserX, ArrowLeft, Users } from 'lucide-react';
+import { CalendarCheck, PlusCircle, CheckCircle, XCircle, UserX, ArrowLeft, Users, Clock } from 'lucide-react';
+
+const S = {
+  th: { color: 'var(--text-3)', fontSize: '0.71rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', padding: '11px 14px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' },
+  td: { padding: '12px 14px', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-2)', fontSize: '0.83rem', verticalAlign: 'middle' },
+  id: { fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', fontWeight: 600, color: 'var(--blue)' },
+  name: { fontWeight: 700, color: 'var(--text-1)' },
+  muted: { color: 'var(--text-3)', fontSize: '0.75rem' },
+  amber: { color: 'var(--amber)', fontWeight: 600 },
+  empty: { color: 'var(--text-3)', fontStyle: 'italic', textAlign: 'center', padding: '24px' },
+  sectionHead: { fontWeight: 700, color: 'var(--text-1)', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-subtle)' },
+  formHead: { fontWeight: 700, color: 'var(--text-1)', fontSize: '1rem', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-subtle)' },
+  badgePill: (color) => ({ background: `rgba(${color},0.10)`, border: `1px solid rgba(${color},0.25)`, padding: '2px 9px', borderRadius: '12px', fontSize: '0.68rem', fontWeight: 600 }),
+  tag: { background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', padding: '2px 9px', borderRadius: '12px', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-2)' },
+};
 
 export const LeavePortal = ({ activeUser, onBackToDashboard }) => {
   const { showToast } = useToast();
@@ -30,331 +44,231 @@ export const LeavePortal = ({ activeUser, onBackToDashboard }) => {
     return () => window.removeEventListener('mra_db_updated', loadLeaves);
   }, []);
 
-  const loadLeaves = () => {
-    setLeaves(getLeaves());
-  };
+  const loadLeaves = () => setLeaves(getLeaves());
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!formData.fromTo || !formData.purpose) {
-      showToast('Please enter leave dates and purpose.', 'error');
-      return;
-    }
-
+    if (!formData.fromTo || !formData.purpose) { showToast('Please enter leave dates and purpose.', 'error'); return; }
     addLeaveRequest(formData);
     showToast('Leave application submitted successfully!', 'success', 'Application Pending');
     setShowForm(false);
-    setFormData({
-      empId: activeUser?.id || '',
-      name: activeUser?.name || '',
-      dept: activeUser?.dept || 'Hardware & Embedded Systems',
-      fromTo: '',
-      contact: '',
-      noOfDays: 1,
-      purpose: '',
-      leaveType: 'EL',
-      requirementType: 'Quick'
-    });
+    setFormData({ empId: activeUser?.id || '', name: activeUser?.name || '', dept: activeUser?.dept || 'Hardware & Embedded Systems', fromTo: '', contact: '', noOfDays: 1, purpose: '', leaveType: 'EL', requirementType: 'Quick' });
   };
 
-  const handleApprove = (id) => {
-    updateLeaveStatus(id, 'Approved', `${activeUser?.name} (${activeUser?.role})`);
-    showToast(`Leave application ${id} APPROVED!`, 'success');
-  };
+  const handleApprove = (id) => { updateLeaveStatus(id, 'Approved', `${activeUser?.name} (${activeUser?.role})`); showToast(`Leave ${id} APPROVED!`, 'success'); };
+  const handleReject  = (id) => { updateLeaveStatus(id, 'Rejected', `${activeUser?.name} (${activeUser?.role})`); showToast(`Leave ${id} REJECTED.`, 'warning'); };
 
-  const handleReject = (id) => {
-    updateLeaveStatus(id, 'Rejected', `${activeUser?.name} (${activeUser?.role})`);
-    showToast(`Leave application ${id} REJECTED.`, 'warning');
-  };
-
-  const currentlyOnLeaveMembers = leaves.filter(l => l.status === 'Approved');
-  const myPersonalLeaves = leaves.filter(l => l.empId === activeUser?.id);
+  const currentlyOnLeave = leaves.filter(l => l.status === 'Approved');
+  const myLeaves         = leaves.filter(l => l.empId === activeUser?.id);
+  const pendingLeaves    = leaves.filter(l => l.status === 'Pending');
 
   return (
     <div className="portal-page-container">
-      {/* Top Left Symbol Back Button */}
       <button onClick={onBackToDashboard} className="nav-back-symbol-btn">
-        <ArrowLeft className="w-4 h-4" />
-        <span>Return to Dashboard</span>
+        <ArrowLeft className="w-4 h-4" /><span>Return to Dashboard</span>
       </button>
 
-      {/* Header Bar */}
+      {/* Header */}
       <div className="portal-header-bar glow-card">
         <div>
-          <h2 className="portal-title flex items-center gap-2">
-            <CalendarCheck className="w-6 h-6 text-amber-400" />
+          <h2 className="portal-title" style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            <CalendarCheck style={{color:'var(--amber)'}} className="w-6 h-6" />
             Leave Application Portal
           </h2>
-          <p className="portal-subtitle">Currently on-leave employees shown first. Apply for leaves or manage approvals.</p>
+          <p className="portal-subtitle">On-leave employees shown first. Apply for leave or manage approvals below.</p>
         </div>
-
         <button onClick={() => setShowForm(!showForm)} className="btn-gold">
-          <PlusCircle className="w-5 h-5 mr-1" />
-          <span>{showForm ? 'Cancel Application' : 'New Leave Application'}</span>
+          <PlusCircle className="w-4 h-4" />
+          <span>{showForm ? 'Cancel' : 'New Leave Application'}</span>
         </button>
       </div>
 
-      {/* Leave Application Form */}
+      {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="glow-card form-card p-6 mb-6">
-          <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-2">
-            📝 New Leave Application Form
-          </h3>
-
+        <form onSubmit={handleSubmit} className="glow-card" style={{padding:'24px'}}>
+          <h3 style={S.formHead}>📝 New Leave Application</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="form-group">
               <label>Employee Name</label>
-              <input type="text" value={formData.name} readOnly className="bg-slate-900 text-slate-400" />
+              <input type="text" value={formData.name} readOnly style={{opacity:0.65,cursor:'default'}} />
             </div>
-
             <div className="form-group">
               <label>Employee ID</label>
-              <input type="text" value={formData.empId} readOnly className="bg-slate-900 text-slate-400" />
+              <input type="text" value={formData.empId} readOnly style={{opacity:0.65,cursor:'default'}} />
             </div>
-
             <div className="form-group">
               <label>Department</label>
-              <input type="text" value={formData.dept} readOnly className="bg-slate-900 text-slate-400" />
+              <input type="text" value={formData.dept} readOnly style={{opacity:0.65,cursor:'default'}} />
             </div>
-
             <div className="form-group">
-              <label>Leave Dates (From - To) <span className="text-rose-400">*</span></label>
-              <input
-                type="text"
-                placeholder="e.g. 2026-08-01 to 2026-08-03"
-                value={formData.fromTo}
-                onChange={e => setFormData({ ...formData, fromTo: e.target.value })}
-                required
-              />
+              <label>Leave Dates (From – To) <span style={{color:'var(--rose)'}}>*</span></label>
+              <input type="text" placeholder="e.g. 2026-08-01 to 2026-08-03" value={formData.fromTo} onChange={e => setFormData({...formData,fromTo:e.target.value})} required />
             </div>
-
             <div className="form-group">
-              <label>Emergency Contact No.</label>
-              <input
-                type="text"
-                placeholder="+1 555-0192"
-                value={formData.contact}
-                onChange={e => setFormData({ ...formData, contact: e.target.value })}
-              />
+              <label>Emergency Contact</label>
+              <input type="text" placeholder="+1 555-0192" value={formData.contact} onChange={e => setFormData({...formData,contact:e.target.value})} />
             </div>
-
             <div className="form-group">
               <label>Number of Days</label>
-              <input
-                type="number"
-                min="1"
-                value={formData.noOfDays}
-                onChange={e => setFormData({ ...formData, noOfDays: parseInt(e.target.value) || 1 })}
-                required
-              />
+              <input type="number" min="1" value={formData.noOfDays} onChange={e => setFormData({...formData,noOfDays:parseInt(e.target.value)||1})} required />
             </div>
-
             <div className="form-group">
-              <label>Type of Leave</label>
-              <select value={formData.leaveType} onChange={e => setFormData({ ...formData, leaveType: e.target.value })}>
+              <label>Leave Type</label>
+              <select value={formData.leaveType} onChange={e => setFormData({...formData,leaveType:e.target.value})}>
                 <option value="EL">Earned Leave (EL)</option>
                 <option value="CL">Casual Leave (CL)</option>
               </select>
             </div>
-
             <div className="form-group">
-              <label>Urgency / Requirement</label>
-              <select value={formData.requirementType} onChange={e => setFormData({ ...formData, requirementType: e.target.value })}>
+              <label>Urgency</label>
+              <select value={formData.requirementType} onChange={e => setFormData({...formData,requirementType:e.target.value})}>
                 <option value="Emergency">Emergency 🚨</option>
                 <option value="Quick">Quick ⚡</option>
                 <option value="General">General ℹ️</option>
               </select>
             </div>
-
-            <div className="form-group md:col-span-3">
-              <label>Detailed Purpose <span className="text-rose-400">*</span></label>
-              <textarea
-                placeholder="State the reason for your leave application..."
-                value={formData.purpose}
-                onChange={e => setFormData({ ...formData, purpose: e.target.value })}
-                required
-                rows={2}
-              ></textarea>
+            <div className="form-group md:col-span-3" style={{gridColumn:'1/-1'}}>
+              <label>Detailed Purpose <span style={{color:'var(--rose)'}}>*</span></label>
+              <textarea placeholder="State the reason for your leave application..." value={formData.purpose} onChange={e => setFormData({...formData,purpose:e.target.value})} required rows={2} />
             </div>
           </div>
-
-          <div className="mt-4 flex justify-end gap-3">
+          <div style={{display:'flex',justifyContent:'flex-end',gap:'10px',marginTop:'16px'}}>
             <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
             <button type="submit" className="btn-gold">Submit Leave Application</button>
           </div>
         </form>
       )}
 
-      {/* Sub-view Tab Switcher */}
-      <div className="flex gap-2 mb-2">
-        <button
-          onClick={() => setActiveTabSubView('on_leave_first')}
-          className={`tab-btn ${activeTabSubView === 'on_leave_first' ? 'active' : ''}`}
-        >
-          <UserX className="w-3.5 h-3.5 text-rose-400" /> Currently On-Leave Members FIRST ({currentlyOnLeaveMembers.length})
+      {/* Tabs */}
+      <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+        <button onClick={() => setActiveTabSubView('on_leave_first')} className={`tab-btn ${activeTabSubView==='on_leave_first'?'active':''}`}>
+          <UserX className="w-3.5 h-3.5" /> On-Leave Now ({currentlyOnLeave.length})
         </button>
-
-        <button
-          onClick={() => setActiveTabSubView('my_leaves')}
-          className={`tab-btn ${activeTabSubView === 'my_leaves' ? 'active' : ''}`}
-        >
-          <CalendarCheck className="w-3.5 h-3.5 text-amber-400" /> My Leave History ({myPersonalLeaves.length})
+        <button onClick={() => setActiveTabSubView('my_leaves')} className={`tab-btn ${activeTabSubView==='my_leaves'?'active':''}`}>
+          <Clock className="w-3.5 h-3.5" /> My Leave History ({myLeaves.length})
         </button>
       </div>
 
-      {/* SUB-VIEW 1: CURRENTLY ON-LEAVE MEMBERS SHOWN FIRST */}
+      {/* Tab 1: Currently On Leave */}
       {activeTabSubView === 'on_leave_first' && (
-        <div className="glow-card p-5 border-rose-500/30">
-          <h3 className="text-md font-bold text-rose-400 mb-4 flex items-center gap-2">
-            <UserX className="w-5 h-5 text-rose-400" />
-            Currently On-Leave Approved Roster ({currentlyOnLeaveMembers.length})
+        <div className="glow-card" style={{padding:'24px'}}>
+          <h3 style={S.sectionHead}>
+            <UserX style={{width:'18px',height:'18px',color:'var(--rose)'}} />
+            Currently On-Leave – Approved Roster ({currentlyOnLeave.length})
           </h3>
-
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Leave ID</th>
-                  <th>Employee Name</th>
-                  <th>Employee ID</th>
-                  <th>Department</th>
-                  <th>Leave Type</th>
-                  <th>Dates</th>
-                  <th>Purpose</th>
-                  <th>Approved By</th>
-                  <th>Status</th>
+                  {['Leave ID','Employee','Employee ID','Department','Type','Dates','Purpose','Approved By','Status'].map(h => (
+                    <th key={h} style={S.th}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {currentlyOnLeaveMembers.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="text-center py-4 text-slate-500 italic">No employees currently on approved leave.</td>
+                {currentlyOnLeave.length === 0 ? (
+                  <tr><td colSpan="9" style={S.empty}>No employees currently on approved leave.</td></tr>
+                ) : currentlyOnLeave.map(l => (
+                  <tr key={l.id}>
+                    <td style={{...S.td,...S.id}}>{l.id}</td>
+                    <td style={{...S.td,...S.name}}>{l.name}</td>
+                    <td style={{...S.td,...S.muted}}>{l.empId}</td>
+                    <td style={{...S.td,...S.amber}}>{l.dept}</td>
+                    <td style={S.td}><span style={{...S.badgePill('252,129,129'),color:'var(--rose)'}}>{l.leaveType}</span></td>
+                    <td style={{...S.td,...S.muted}}>{l.fromTo}</td>
+                    <td style={{...S.td,maxWidth:'200px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.purpose}</td>
+                    <td style={{...S.td,...S.muted}}>{l.approvedBy}</td>
+                    <td style={S.td}><span className="status-pill pill-leave">On Leave</span></td>
                   </tr>
-                ) : (
-                  currentlyOnLeaveMembers.map(l => (
-                    <tr key={l.id}>
-                      <td className="font-mono text-cyan-400 text-xs font-semibold">{l.id}</td>
-                      <td className="font-bold text-white">{l.name}</td>
-                      <td className="font-mono text-xs text-slate-400">{l.empId}</td>
-                      <td className="text-amber-400">{l.dept}</td>
-                      <td><span className="badge-tag bg-rose-500/20 text-rose-300">{l.leaveType}</span></td>
-                      <td className="font-mono text-xs">{l.fromTo}</td>
-                      <td className="text-slate-300 max-w-xs truncate">{l.purpose}</td>
-                      <td className="text-xs text-slate-400">{l.approvedBy}</td>
-                      <td><span className="status-pill pill-leave">On Leave</span></td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* SUB-VIEW 2: MY PERSONAL LEAVE HISTORY */}
+      {/* Tab 2: My Personal Leaves */}
       {activeTabSubView === 'my_leaves' && (
-        <div className="glow-card p-5 border-amber-500/30">
-          <h3 className="text-md font-bold text-amber-400 mb-4">
-            My Personal Leave Applications ({myPersonalLeaves.length})
+        <div className="glow-card" style={{padding:'24px'}}>
+          <h3 style={S.sectionHead}>
+            <CalendarCheck style={{width:'18px',height:'18px',color:'var(--amber)'}} />
+            My Leave Applications ({myLeaves.length})
           </h3>
-
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Leave ID</th>
-                  <th>Leave Type</th>
-                  <th>Dates</th>
-                  <th>Days</th>
-                  <th>Purpose</th>
-                  <th>Applied On</th>
-                  <th>Status</th>
-                  <th>Approver</th>
+                  {['Leave ID','Type','Dates','Days','Purpose','Applied On','Status','Approver'].map(h => (
+                    <th key={h} style={S.th}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {myPersonalLeaves.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="text-center py-4 text-slate-500 italic">No leave applications found for your account.</td>
+                {myLeaves.length === 0 ? (
+                  <tr><td colSpan="8" style={S.empty}>No leave applications found for your account.</td></tr>
+                ) : myLeaves.map(l => (
+                  <tr key={l.id}>
+                    <td style={{...S.td,...S.id}}>{l.id}</td>
+                    <td style={S.td}><span style={{...S.badgePill('236,201,75'),color:'var(--amber)'}}>{l.leaveType}</span></td>
+                    <td style={{...S.td,...S.muted}}>{l.fromTo}</td>
+                    <td style={{...S.td,...S.amber}}>{l.noOfDays}</td>
+                    <td style={S.td}>{l.purpose}</td>
+                    <td style={{...S.td,...S.muted}}>{l.appliedDate}</td>
+                    <td style={S.td}>
+                      <span className={`status-pill ${l.status==='Approved'?'pill-leave':l.status==='Pending'?'pill-pending':'pill-active'}`}>{l.status}</span>
+                    </td>
+                    <td style={{...S.td,...S.muted}}>{l.approvedBy}</td>
                   </tr>
-                ) : (
-                  myPersonalLeaves.map(l => (
-                    <tr key={l.id}>
-                      <td className="font-mono text-cyan-400 text-xs font-semibold">{l.id}</td>
-                      <td><span className="badge-tag bg-amber-500/20 text-amber-300">{l.leaveType}</span></td>
-                      <td className="font-mono text-xs">{l.fromTo}</td>
-                      <td className="font-mono text-amber-300">{l.noOfDays}</td>
-                      <td className="text-slate-300">{l.purpose}</td>
-                      <td className="text-xs text-slate-400">{l.appliedDate}</td>
-                      <td>
-                        <span className={`status-pill ${l.status === 'Approved' ? 'pill-leave' : l.status === 'Pending' ? 'pill-pending' : 'pill-active'}`}>
-                          {l.status}
-                        </span>
-                      </td>
-                      <td className="text-xs text-slate-400">{l.approvedBy}</td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* HR & CEO Pending Approvals Matrix */}
+      {/* HR & CEO Approvals */}
       {(isHR || isCEO) && (
-        <div className="glow-card p-5 mt-6 border-cyan-500/30">
-          <h3 className="text-md font-bold text-cyan-400 mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5 text-cyan-400" />
-            HR & Executive Pending Approvals Matrix ({leaves.filter(l => l.status === 'Pending').length})
+        <div className="glow-card" style={{padding:'24px'}}>
+          <h3 style={S.sectionHead}>
+            <Users style={{width:'18px',height:'18px',color:'var(--blue)'}} />
+            Pending Approvals Matrix ({pendingLeaves.length})
           </h3>
-
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Leave ID</th>
-                  <th>Employee</th>
-                  <th>Department</th>
-                  <th>Leave Type</th>
-                  <th>Dates</th>
-                  <th>Days</th>
-                  <th>Purpose</th>
-                  <th>Action</th>
+                  {['Leave ID','Employee','Department','Type','Dates','Days','Purpose','Action'].map(h => (
+                    <th key={h} style={S.th}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {leaves.filter(l => l.status === 'Pending').length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="text-center py-4 text-slate-500 italic">No pending leave applications requiring approval.</td>
+                {pendingLeaves.length === 0 ? (
+                  <tr><td colSpan="8" style={S.empty}>No pending leave applications requiring approval.</td></tr>
+                ) : pendingLeaves.map(l => (
+                  <tr key={l.id}>
+                    <td style={{...S.td,...S.id}}>{l.id}</td>
+                    <td style={S.td}>
+                      <div style={S.name}>{l.name}</div>
+                      <div style={S.muted}>{l.empId}</div>
+                    </td>
+                    <td style={{...S.td,...S.amber}}>{l.dept}</td>
+                    <td style={S.td}><span style={{...S.badgePill('236,201,75'),color:'var(--amber)'}}>{l.leaveType}</span></td>
+                    <td style={{...S.td,...S.muted}}>{l.fromTo}</td>
+                    <td style={{...S.td,...S.amber}}>{l.noOfDays}</td>
+                    <td style={S.td}>{l.purpose}</td>
+                    <td style={S.td}>
+                      <div style={{display:'flex',gap:'6px'}}>
+                        <button onClick={() => handleApprove(l.id)} className="btn-emerald btn-xs">
+                          <CheckCircle className="w-3.5 h-3.5" /> Approve
+                        </button>
+                        <button onClick={() => handleReject(l.id)} className="btn-amber btn-xs">
+                          <XCircle className="w-3.5 h-3.5" /> Reject
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                ) : (
-                  leaves.filter(l => l.status === 'Pending').map(l => (
-                    <tr key={l.id}>
-                      <td className="font-mono text-cyan-400 text-xs font-semibold">{l.id}</td>
-                      <td>
-                        <div className="font-bold text-white">{l.name}</div>
-                        <div className="text-xs text-slate-400">{l.empId}</div>
-                      </td>
-                      <td className="text-amber-400">{l.dept}</td>
-                      <td><span className="badge-tag bg-amber-500/20 text-amber-300">{l.leaveType}</span></td>
-                      <td className="font-mono text-xs">{l.fromTo}</td>
-                      <td className="font-mono text-amber-300">{l.noOfDays}</td>
-                      <td className="text-slate-300">{l.purpose}</td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button onClick={() => handleApprove(l.id)} className="btn-emerald btn-xs">
-                            <CheckCircle className="w-3.5 h-3.5 mr-1 inline" /> Approve
-                          </button>
-                          <button onClick={() => handleReject(l.id)} className="btn-amber btn-xs">
-                            <XCircle className="w-3.5 h-3.5 mr-1 inline" /> Reject
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>

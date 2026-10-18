@@ -13,11 +13,8 @@ import {
   ArrowLeft,
   BellRing,
   Smartphone,
-  CheckCircle,
   Eye,
   Building,
-  Key,
-  Shield
 } from 'lucide-react';
 import { exportDatabaseExcelCSV, exportDatabaseJSON } from '../services/db';
 
@@ -25,7 +22,7 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
   const { showToast, showModalPopup } = useToast();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [showFullProfileModal, setShowFullProfileModal] = useState(false);
-  const [pushToken, setPushToken] = useState(`MRA-PUSH-TOK-2026-${Math.floor(100000 + Math.random() * 900000)}`);
+  const [pushToken] = useState(`MRA-PUSH-TOK-2026-${Math.floor(100000 + Math.random() * 900000)}`);
 
   const handleThemeChange = (newTheme) => {
     if (newTheme === theme) return;
@@ -60,6 +57,9 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
 
   const isCEO = activeUser?.role === 'CEO/FOUNDER/DIRECTOR';
 
+  /* ── reusable inline style helpers ─────────────────────── */
+  const cardBorder = { borderBottom: '1px solid var(--border)' };
+
   return (
     <div className="portal-page-container">
       {/* Top Left Symbol Back Button */}
@@ -72,8 +72,8 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
       <div className="portal-header-bar glow-card">
         <div>
           <h2 className="portal-title flex items-center gap-2">
-            <SettingsIcon className="w-6 h-6 text-sky-400" />
-            Portal Settings & Preferences
+            <SettingsIcon className="w-6 h-6" style={{ color: 'var(--blue)' }} />
+            Portal Settings &amp; Preferences
           </h2>
           <p className="portal-subtitle">Manage profile details, theme appearance, online status, and push notification tokens.</p>
         </div>
@@ -83,10 +83,10 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
         {/* 1. Profile DP & Account Overview Card */}
         <div className="glow-card p-6 flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
-              <h3 className="text-md font-bold text-sky-400 flex items-center gap-2">
-                <User className="w-5 h-5 text-sky-400" />
-                Profile DP & Account Details
+            <div className="flex justify-between items-center pb-3 mb-4" style={cardBorder}>
+              <h3 className="text-md font-bold flex items-center gap-2" style={{ color: 'var(--blue)' }}>
+                <User className="w-5 h-5" style={{ color: 'var(--blue)' }} />
+                Profile DP &amp; Account Details
               </h3>
               <button
                 onClick={() => setShowFullProfileModal(true)}
@@ -100,14 +100,18 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
             <div className="profile-card-header mb-4">
               <div className="relative">
                 <img src={activeUser?.avatar} alt={activeUser?.name} className="profile-dp-img" />
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Online Active"></span>
+                <span
+                  className="absolute bottom-0 right-0 w-4 h-4 rounded-full"
+                  style={{ background: 'var(--emerald)', border: '2px solid var(--bg-surface)' }}
+                  title="Online Active"
+                />
               </div>
 
               <div className="space-y-1">
-                <div className="font-bold text-lg text-white">{activeUser?.name}</div>
-                <div className="text-sky-400 font-mono text-xs">User ID: {activeUser?.id}</div>
-                <div className="text-emerald-400 font-semibold text-xs flex items-center gap-1">
-                  <span>🟢 Online & Active</span>
+                <div className="font-bold text-lg" style={{ color: 'var(--text-1)' }}>{activeUser?.name}</div>
+                <div className="font-mono text-xs" style={{ color: 'var(--blue)' }}>User ID: {activeUser?.id}</div>
+                <div className="font-semibold text-xs flex items-center gap-1" style={{ color: 'var(--emerald)' }}>
+                  <span>🟢 Online &amp; Active</span>
                 </div>
               </div>
             </div>
@@ -116,20 +120,20 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
             <div className="grid grid-cols-1 gap-3 text-xs">
               <div className="settings-field-box">
                 <div className="settings-field-label">Role Designation</div>
-                <div className="settings-field-value text-sky-400">{activeUser?.role}</div>
+                <div className="settings-field-value" style={{ color: 'var(--blue)' }}>{activeUser?.role}</div>
               </div>
 
               <div className="settings-field-box">
-                <div className="settings-field-label">Assigned Department</div>
+                <div className="settings-field-label"><Building className="w-3 h-3 inline mr-1" />Assigned Department</div>
                 <div className="settings-field-value">{activeUser?.dept}</div>
               </div>
 
               <div className="settings-field-box flex justify-between items-center">
                 <div>
                   <div className="settings-field-label">Corporate Email Address</div>
-                  <div className="settings-field-value text-slate-200">{activeUser?.email}</div>
+                  <div className="settings-field-value" style={{ color: 'var(--text-1)' }}>{activeUser?.email}</div>
                 </div>
-                <Mail className="w-4 h-4 text-sky-400 shrink-0" />
+                <Mail className="w-4 h-4 shrink-0" style={{ color: 'var(--blue)' }} />
               </div>
             </div>
           </div>
@@ -138,49 +142,73 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
         {/* 2. Theme & Appearance Settings */}
         <div className="glow-card p-6 flex flex-col justify-between">
           <div>
-            <h3 className="text-md font-bold text-sky-400 mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
-              <Palette className="w-5 h-5 text-amber-400" />
-              Appearance & Color Theme
+            <h3 className="text-md font-bold mb-4 flex items-center gap-2 pb-3" style={{ color: 'var(--blue)', ...cardBorder }}>
+              <Palette className="w-5 h-5" style={{ color: 'var(--amber)' }} />
+              Appearance &amp; Color Theme
             </h3>
 
-            <p className="text-xs text-slate-400 mb-4">Select your visual theme preference for MRA SYNC:</p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Select your visual theme preference for MRA SYNC:</p>
 
             <div className="grid grid-cols-2 gap-4">
               {/* Dark Theme Option */}
               <button
                 onClick={() => handleThemeChange('dark')}
-                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between h-32 ${
-                  theme === 'dark'
-                    ? 'bg-slate-900 border-sky-400 shadow-lg shadow-sky-500/10'
-                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                }`}
+                style={{
+                  padding: '16px',
+                  borderRadius: 'var(--r-xl)',
+                  border: theme === 'dark' ? '2px solid var(--blue)' : '1px solid var(--border)',
+                  background: theme === 'dark' ? 'rgba(99,179,237,0.08)' : 'var(--bg-hover)',
+                  textAlign: 'left',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  height: '128px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: theme === 'dark' ? '0 4px 16px rgba(99,179,237,0.15)' : 'none',
+                  fontFamily: 'inherit',
+                }}
               >
                 <div className="flex justify-between items-center">
-                  <Moon className="w-6 h-6 text-sky-400" />
-                  {theme === 'dark' && <span className="badge-tag bg-sky-500/20 text-sky-300 font-bold">Active</span>}
+                  <Moon className="w-6 h-6" style={{ color: 'var(--blue)' }} />
+                  {theme === 'dark' && (
+                    <span className="badge-tag" style={{ background: 'rgba(99,179,237,0.15)', color: 'var(--blue)', fontWeight: 700 }}>Active</span>
+                  )}
                 </div>
                 <div>
-                  <div className="font-bold text-white text-sm">Deep Midnight Dark</div>
-                  <div className="text-[11px] text-slate-400">Midnight navy & slate blue contrast</div>
+                  <div className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>Deep Midnight Dark</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>Midnight navy &amp; slate blue contrast</div>
                 </div>
               </button>
 
               {/* Light Theme Option */}
               <button
                 onClick={() => handleThemeChange('light')}
-                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between h-32 ${
-                  theme === 'light'
-                    ? 'bg-slate-100 border-sky-500 shadow-lg shadow-sky-500/10 text-slate-900'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                }`}
+                style={{
+                  padding: '16px',
+                  borderRadius: 'var(--r-xl)',
+                  border: theme === 'light' ? '2px solid var(--blue)' : '1px solid var(--border)',
+                  background: theme === 'light' ? 'rgba(43,108,176,0.06)' : 'var(--bg-hover)',
+                  textAlign: 'left',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  height: '128px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: theme === 'light' ? '0 4px 16px rgba(43,108,176,0.12)' : 'none',
+                  fontFamily: 'inherit',
+                }}
               >
                 <div className="flex justify-between items-center">
-                  <Sun className="w-6 h-6 text-amber-500" />
-                  {theme === 'light' && <span className="badge-tag bg-sky-500/20 text-sky-700 font-bold">Active</span>}
+                  <Sun className="w-6 h-6" style={{ color: 'var(--amber)' }} />
+                  {theme === 'light' && (
+                    <span className="badge-tag" style={{ background: 'rgba(43,108,176,0.12)', color: 'var(--blue)', fontWeight: 700 }}>Active</span>
+                  )}
                 </div>
                 <div>
-                  <div className={`font-bold text-sm ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Professional Light</div>
-                  <div className="text-[11px] text-slate-400">Clean alabaster white & slate design</div>
+                  <div className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>Professional Light</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>Clean alabaster white &amp; slate design</div>
                 </div>
               </button>
             </div>
@@ -189,18 +217,26 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
 
         {/* 3. Push Notification Token & Mobile Preferences */}
         <div className="glow-card p-6 md:col-span-2">
-          <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
-            <BellRing className="w-5 h-5 text-sky-400" />
+          <h3 className="text-md font-bold mb-4 flex items-center gap-2 pb-3" style={{ color: 'var(--text-1)', ...cardBorder }}>
+            <BellRing className="w-5 h-5" style={{ color: 'var(--blue)' }} />
             Real-time Background Push Notification Token
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center text-xs">
             <div className="md:col-span-2 space-y-1">
-              <div className="font-bold text-white flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-emerald-400" /> Device Notification Token (PC & Mobile)
+              <div className="font-bold flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
+                <Smartphone className="w-4 h-4" style={{ color: 'var(--emerald)' }} /> Device Notification Token (PC &amp; Mobile)
               </div>
-              <p className="text-slate-400">This token enables real-time background meeting reminders and work transfer notifications across mobile and web.</p>
-              <div className="font-mono bg-slate-900/80 p-2.5 rounded border border-sky-500/30 text-sky-300 select-all font-semibold">
+              <p style={{ color: 'var(--text-3)' }}>This token enables real-time background meeting reminders and work transfer notifications across mobile and web.</p>
+              <div
+                className="font-mono p-2.5 rounded select-all font-semibold"
+                style={{
+                  background: 'var(--bg-page)',
+                  border: '1px solid var(--border-input)',
+                  color: 'var(--cyan)',
+                  borderRadius: 'var(--r-md)',
+                }}
+              >
                 {pushToken}
               </div>
             </div>
@@ -218,15 +254,15 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
 
         {/* 4. Session & Data Management */}
         <div className="glow-card p-6 md:col-span-2">
-          <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-800 pb-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            Session Security & Data Export
+          <h3 className="text-md font-bold mb-4 flex items-center gap-2 pb-3" style={{ color: 'var(--text-1)', ...cardBorder }}>
+            <ShieldCheck className="w-5 h-5" style={{ color: 'var(--emerald)' }} />
+            Session Security &amp; Data Export
           </h3>
 
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="font-bold text-white text-sm">Active Session Control & Excel Data Export</div>
-              <div className="text-xs text-slate-400">Sign out safely or export complete backend logs (Excel / CSV).</div>
+              <div className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>Active Session Control &amp; Excel Data Export</div>
+              <div className="text-xs" style={{ color: 'var(--text-3)' }}>Sign out safely or export complete backend logs (Excel / CSV).</div>
             </div>
 
             <div className="flex gap-3">
@@ -240,7 +276,11 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
                   </button>
                 </>
               )}
-              <button onClick={handleLogoutClick} className="btn-secondary text-rose-400 border-rose-500/30 hover:bg-rose-500/10">
+              <button
+                onClick={handleLogoutClick}
+                className="btn-secondary"
+                style={{ color: 'var(--rose)', borderColor: 'rgba(252,129,129,0.30)' }}
+              >
                 <LogOut className="w-4 h-4 mr-1" /> Logout Account
               </button>
             </div>
@@ -254,10 +294,15 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
           <div className="modal-content glow-card max-w-md">
             <div className="modal-header">
               <div className="flex items-center gap-3">
-                <img src={activeUser?.avatar} alt={activeUser?.name} className="w-12 h-12 rounded-full border-2 border-sky-400" />
+                <img
+                  src={activeUser?.avatar}
+                  alt={activeUser?.name}
+                  className="w-12 h-12 rounded-full"
+                  style={{ border: '2px solid var(--blue)' }}
+                />
                 <div>
-                  <h3 className="text-lg font-bold text-white">{activeUser?.name}</h3>
-                  <div className="text-xs text-sky-400 font-mono">User ID: {activeUser?.id}</div>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>{activeUser?.name}</h3>
+                  <div className="text-xs font-mono" style={{ color: 'var(--blue)' }}>User ID: {activeUser?.id}</div>
                 </div>
               </div>
               <button onClick={() => setShowFullProfileModal(false)} className="icon-btn-ghost">✕</button>
@@ -271,12 +316,12 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
 
               <div className="settings-field-box">
                 <div className="settings-field-label">Unique Employee ID</div>
-                <div className="settings-field-value font-mono text-sky-400">{activeUser?.id}</div>
+                <div className="settings-field-value font-mono" style={{ color: 'var(--blue)' }}>{activeUser?.id}</div>
               </div>
 
               <div className="settings-field-box">
                 <div className="settings-field-label">Role Designation</div>
-                <div className="settings-field-value text-amber-400">{activeUser?.role}</div>
+                <div className="settings-field-value" style={{ color: 'var(--amber)' }}>{activeUser?.role}</div>
               </div>
 
               <div className="settings-field-box">
@@ -286,17 +331,17 @@ export const Settings = ({ activeUser, theme, setTheme, onLogout, onBackToDashbo
 
               <div className="settings-field-box">
                 <div className="settings-field-label">Corporate Email Address</div>
-                <div className="settings-field-value text-slate-200">{activeUser?.email}</div>
+                <div className="settings-field-value" style={{ color: 'var(--text-1)' }}>{activeUser?.email}</div>
               </div>
 
               <div className="settings-field-box">
                 <div className="settings-field-label">System Online Status</div>
-                <div className="settings-field-value text-emerald-400">🟢 Online & Active</div>
+                <div className="settings-field-value" style={{ color: 'var(--emerald)' }}>🟢 Online &amp; Active</div>
               </div>
 
               <div className="settings-field-box">
                 <div className="settings-field-label">Push Notification Token</div>
-                <div className="settings-field-value font-mono text-xs text-sky-300">{pushToken}</div>
+                <div className="settings-field-value font-mono text-xs" style={{ color: 'var(--cyan)' }}>{pushToken}</div>
               </div>
             </div>
 

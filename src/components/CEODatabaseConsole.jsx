@@ -68,10 +68,10 @@ export const CEODatabaseConsole = ({ activeUser, onBackToDashboard }) => {
           <span>Return to Dashboard</span>
         </button>
 
-        <div className="alert-card alert-warning text-center p-8">
-          <ShieldAlert className="w-12 h-12 text-rose-400 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-white mb-2">ACCESS RESTRICTED: CEO / DIRECTOR ONLY</h3>
-          <p className="text-xs text-slate-400">The Raw Database Console is strictly reserved for CEO / Founder / Director accounts.</p>
+        <div className="glow-card p-8 text-center" style={{ borderColor: 'rgba(252,129,129,0.30)' }}>
+          <ShieldAlert className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--rose)' }} />
+          <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-1)' }}>ACCESS RESTRICTED: CEO / DIRECTOR ONLY</h3>
+          <p className="text-xs" style={{ color: 'var(--text-3)' }}>The Raw Database Console is strictly reserved for CEO / Founder / Director accounts.</p>
         </div>
       </div>
     );
@@ -88,10 +88,10 @@ export const CEODatabaseConsole = ({ activeUser, onBackToDashboard }) => {
       </button>
 
       {/* Header Bar */}
-      <div className="portal-header-bar glow-card border-amber-500/40">
+      <div className="portal-header-bar glow-card" style={{ borderColor: 'rgba(236,201,75,0.30)' }}>
         <div>
           <h2 className="portal-title flex items-center gap-2">
-            <Database className="w-6 h-6 text-amber-400 animate-pulse" />
+            <Database className="w-6 h-6 animate-pulse" style={{ color: 'var(--amber)' }} />
             CEO Raw Local Database Sheets Manager
           </h2>
           <p className="portal-subtitle">Direct client-side database management console. Inspect, export Excel logs, or manage raw JSON sheets.</p>
@@ -104,14 +104,18 @@ export const CEODatabaseConsole = ({ activeUser, onBackToDashboard }) => {
           <button onClick={exportDatabaseJSON} className="btn-secondary">
             <Download className="w-4 h-4 mr-1" /> JSON
           </button>
-          <button onClick={handleResetDatabase} className="btn-secondary text-rose-400 border-rose-500/30">
+          <button
+            onClick={handleResetDatabase}
+            className="btn-secondary"
+            style={{ color: 'var(--rose)', borderColor: 'rgba(252,129,129,0.30)' }}
+          >
             <RefreshCw className="w-4 h-4 mr-1" /> Reset DB
           </button>
         </div>
       </div>
 
       {/* Sheets Navigation Tabs */}
-      <div className="flex gap-2 border-b border-slate-800 pb-2">
+      <div className="flex gap-2 pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
         <button onClick={() => setActiveSheet('users')} className={`tab-btn ${activeSheet === 'users' ? 'active' : ''}`}>
           Users ({dbData.users.length})
         </button>
@@ -146,22 +150,41 @@ export const CEODatabaseConsole = ({ activeUser, onBackToDashboard }) => {
             <tbody>
               {currentRecords.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4 text-slate-500 italic">No records in this database table.</td>
+                  <td colSpan="6" className="text-center py-4 italic" style={{ color: 'var(--text-4)' }}>
+                    No records in this database table.
+                  </td>
                 </tr>
               ) : (
                 currentRecords.map(item => (
                   <tr key={item.id}>
-                    <td className="font-mono text-cyan-400 text-xs font-bold">{item.id}</td>
-                    <td className="font-semibold text-white">{item.name || item.title || item.empName || item.workAlloter}</td>
-                    <td className="text-amber-400 text-xs">{item.dept || item.deptName || item.targetDept || item.role}</td>
-                    <td>
-                      <span className="badge-tag bg-slate-800 text-slate-300">{item.status || 'Active'}</span>
+                    <td className="font-mono text-xs font-bold" style={{ color: 'var(--cyan)' }}>{item.id}</td>
+                    <td className="font-semibold" style={{ color: 'var(--text-1)' }}>
+                      {item.name || item.title || item.empName || item.workAlloter}
                     </td>
-                    <td className="font-mono text-[10px] text-slate-400 max-w-md truncate" title={JSON.stringify(item)}>
+                    <td className="text-xs" style={{ color: 'var(--amber)' }}>
+                      {item.dept || item.deptName || item.targetDept || item.role}
+                    </td>
+                    <td>
+                      <span
+                        className="badge-tag"
+                        style={{ background: 'var(--bg-hover)', color: 'var(--text-2)', border: '1px solid var(--border-subtle)' }}
+                      >
+                        {item.status || 'Active'}
+                      </span>
+                    </td>
+                    <td
+                      className="font-mono max-w-md truncate"
+                      style={{ fontSize: '10px', color: 'var(--text-3)' }}
+                      title={JSON.stringify(item)}
+                    >
                       {JSON.stringify(item)}
                     </td>
                     <td>
-                      <button onClick={() => handleDeleteRecord(activeSheet, item.id)} className="action-btn action-reject" title="Delete Record">
+                      <button
+                        onClick={() => handleDeleteRecord(activeSheet, item.id)}
+                        className="action-btn action-reject"
+                        title="Delete Record"
+                      >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>

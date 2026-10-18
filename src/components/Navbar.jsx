@@ -157,13 +157,16 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             className="nav-icon-btn"
             title={`Switch to ${theme === 'light' ? 'Luxury Dark' : 'Professional Light'} Theme`}
           >
-            {theme === 'light' ? <Moon className="w-5 h-5 text-amber-600" /> : <Sun className="w-5 h-5 text-sky-400" />}
+            {theme === 'light'
+              ? <Moon className="w-5 h-5" style={{ color: 'var(--blue)' }} />
+              : <Sun className="w-5 h-5" style={{ color: 'var(--amber)' }} />
+            }
           </button>
 
           {/* Department Selector (VISIBLE ONLY FOR CEO, FOUNDER, DIRECTOR, PC, HR) */}
           {canSwitchDepts && (
             <div className="dept-selector-wrapper">
-              <Building className="w-4 h-4 text-sky-400" />
+              <Building className="w-4 h-4" style={{ color: 'var(--blue)' }} />
               <select
                 value={selectedDept}
                 onChange={e => setSelectedDept(e.target.value)}
@@ -185,7 +188,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
               className={`ceo-shortcut-btn ${activeTab === 'ceo_db' ? 'active' : ''}`}
               title="Exclusive Backend Database Access for CEO / Director"
             >
-              <Database className="w-4 h-4 text-sky-400 animate-pulse" />
+              <Database className="w-4 h-4 animate-pulse" style={{ color: 'var(--blue)' }} />
               <span>⚡ CEO Raw Database</span>
             </button>
           )}
@@ -197,24 +200,29 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
               className="nav-icon-btn"
               title={`${unreadCount} notifications & meeting reminders`}
             >
-              <Bell className="w-5 h-5 text-slate-300" />
+              <Bell className="w-5 h-5" style={{ color: 'var(--text-2)' }} />
               {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
             </div>
 
             {showNotifDropdown && (
               <div className="absolute right-0 mt-2 w-80 notif-dropdown-card p-4 z-50 rounded-xl text-xs space-y-2">
-                <div className="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
+                <div className="flex justify-between items-center pb-2 mb-2" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span className="font-bold notif-header-title flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-amber-500" /> Notifications & Reminders ({notificationsList.length})
+                    <Clock className="w-4 h-4" style={{ color: 'var(--amber)' }} /> Notifications &amp; Reminders ({notificationsList.length})
                   </span>
-                  <button onClick={() => setShowNotifDropdown(false)} className="text-slate-400 hover:text-rose-500">
+                  <button
+                    onClick={() => setShowNotifDropdown(false)}
+                    style={{ color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--rose)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
+                  >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {notificationsList.length === 0 ? (
-                    <p className="text-slate-500 italic text-center py-2">No active notifications.</p>
+                    <p className="italic text-center py-2" style={{ color: 'var(--text-4)' }}>No active notifications.</p>
                   ) : (
                     notificationsList.map(n => (
                       <div
@@ -226,7 +234,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
                           <div className="notif-item-title">{n.title}</div>
                           <div className="notif-item-msg text-[11px]">{n.message}</div>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-sky-500 shrink-0" />
+                        <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'var(--blue)' }} />
                       </div>
                     ))
                   )}
@@ -278,7 +286,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             className={`nav-link ${activeTab === 'inventory' ? 'active' : ''}`}
           >
             <Boxes className="w-4 h-4" />
-            <span>Material & Inventory</span>
+            <span>Material &amp; Inventory</span>
           </button>
 
           {/* Transfer Track of Work */}
@@ -310,7 +318,7 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
         </div>
 
         <div className="nav-status-indicator">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 inline mr-1" />
+          <ShieldCheck className="w-4 h-4 inline mr-1" style={{ color: 'var(--emerald)' }} />
           <span>MRA SYNC Active ({theme.toUpperCase()})</span>
         </div>
       </nav>

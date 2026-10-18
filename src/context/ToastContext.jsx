@@ -5,6 +5,17 @@ const ToastContext = createContext();
 
 export const useToast = () => useContext(ToastContext);
 
+/* ── icon color map using CSS variables ────────────────── */
+const ICON_COLORS = {
+  success:  'var(--emerald)',
+  error:    'var(--rose)',
+  warning:  'var(--amber)',
+  login:    'var(--amber)',
+  info:     'var(--blue)',
+  redirect: 'var(--cyan)',
+  logout:   'var(--text-3)',
+};
+
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [modalConfig, setModalConfig] = useState(null);
@@ -37,14 +48,14 @@ export const ToastProvider = ({ children }) => {
       <div className="toast-container">
         {toasts.map(toast => (
           <div key={toast.id} className={`toast-card toast-${toast.type}`}>
-            <div className="toast-icon">
-              {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-emerald-400" />}
-              {toast.type === 'error' && <AlertTriangle className="w-5 h-5 text-rose-400" />}
-              {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-400" />}
-              {toast.type === 'login' && <Sparkles className="w-5 h-5 text-amber-400" />}
-              {toast.type === 'info' && <Info className="w-5 h-5 text-sky-400" />}
-              {toast.type === 'redirect' && <Calendar className="w-5 h-5 text-cyan-400" />}
-              {toast.type === 'logout' && <LogOut className="w-5 h-5 text-slate-400" />}
+            <div className="toast-icon" style={{ color: ICON_COLORS[toast.type] || 'var(--blue)' }}>
+              {toast.type === 'success'  && <CheckCircle  className="w-5 h-5" />}
+              {toast.type === 'error'    && <AlertTriangle className="w-5 h-5" />}
+              {toast.type === 'warning'  && <AlertTriangle className="w-5 h-5" />}
+              {toast.type === 'login'    && <Sparkles      className="w-5 h-5" />}
+              {toast.type === 'info'     && <Info          className="w-5 h-5" />}
+              {toast.type === 'redirect' && <Calendar      className="w-5 h-5" />}
+              {toast.type === 'logout'   && <LogOut        className="w-5 h-5" />}
             </div>
             <div className="toast-content">
               {toast.title && <div className="toast-title">{toast.title}</div>}
@@ -63,10 +74,10 @@ export const ToastProvider = ({ children }) => {
           <div className="modal-content glow-card max-w-lg">
             <div className="modal-header">
               <div className="modal-title-wrapper">
-                {modalConfig.iconType === 'login' && <Sparkles className="w-6 h-6 text-amber-400" />}
-                {modalConfig.iconType === 'logout' && <LogOut className="w-6 h-6 text-rose-400" />}
-                {modalConfig.iconType === 'info' && <Info className="w-6 h-6 text-cyan-400" />}
-                {modalConfig.iconType === 'meeting' && <Calendar className="w-6 h-6 text-amber-400" />}
+                {modalConfig.iconType === 'login'   && <Sparkles className="w-6 h-6" style={{ color: 'var(--amber)' }} />}
+                {modalConfig.iconType === 'logout'  && <LogOut   className="w-6 h-6" style={{ color: 'var(--rose)'  }} />}
+                {modalConfig.iconType === 'info'    && <Info     className="w-6 h-6" style={{ color: 'var(--cyan)'  }} />}
+                {modalConfig.iconType === 'meeting' && <Calendar className="w-6 h-6" style={{ color: 'var(--amber)' }} />}
                 <h3>{modalConfig.title}</h3>
               </div>
               <button onClick={closeModalPopup} className="icon-btn-ghost">
