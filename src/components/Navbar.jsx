@@ -17,7 +17,6 @@ import {
   Sun,
   Moon,
   Clock,
-  MessageSquare,
   X,
   ChevronRight
 } from 'lucide-react';
@@ -35,7 +34,6 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
   const isNormalEmp = activeUser?.role === 'EMPLOYEE';
 
   const canSwitchDepts = isCEO || isPC || isHR;
-  const canAccessChat = isCEO || isPC || activeUser?.dept === 'Project Management';
 
   const ACTUAL_DEPARTMENTS = [
     'Executive Management',
@@ -300,17 +298,6 @@ export const Navbar = ({ activeUser, activeTab, setActiveTab, selectedDept, setS
             <FileText className="w-4 h-4" />
             <span>Personal Work Log</span>
           </button>
-
-          {/* Team Chat (EXCLUSIVE TO PM TEAM & EXECUTIVES) */}
-          {canAccessChat && (
-            <button
-              onClick={() => handleTabChangeSilently('chat')}
-              className={`nav-link ${activeTab === 'chat' ? 'active' : ''}`}
-            >
-              <MessageSquare className="w-4 h-4 text-sky-400" />
-              <span>PM Team Chat</span>
-            </button>
-          )}
 
           {/* Settings Page */}
           <button

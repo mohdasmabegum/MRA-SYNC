@@ -10,7 +10,6 @@ import { WorkTransferPortal } from './components/WorkTransferPortal';
 import { EmployeeWorkLog } from './components/EmployeeWorkLog';
 import { CEODatabaseConsole } from './components/CEODatabaseConsole';
 import { Settings } from './components/Settings';
-import { TeamChatPortal } from './components/TeamChatPortal';
 import { initDatabase } from './services/db';
 
 export function AppContent() {
@@ -106,13 +105,6 @@ export function AppContent() {
 
         {activeTab === 'personal_log' && (
           <EmployeeWorkLog
-            activeUser={activeUser}
-            onBackToDashboard={handleBackToDashboard}
-          />
-        )}
-
-        {activeTab === 'chat' && (
-          <TeamChatPortal
             activeUser={activeUser}
             onBackToDashboard={handleBackToDashboard}
           />
